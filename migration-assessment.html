@@ -1,0 +1,3086 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAP PI/PO Migration Assessment Tool</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; color: #1a1a2e; }
+
+  .header {
+    background: linear-gradient(135deg, #1a237e 0%, #0d47a1 50%, #1565c0 100%);
+    color: white; padding: 20px 32px;
+    display: flex; align-items: center; gap: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .header h1 { font-size: 22px; font-weight: 600; }
+  .header p { font-size: 13px; opacity: 0.85; margin-top: 3px; }
+  .header-icon { font-size: 36px; }
+
+  .container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+
+  .upload-section {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;
+  }
+  .upload-card {
+    background: white; border-radius: 12px; padding: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    border: 2px dashed #c5cae9; transition: border-color 0.2s;
+  }
+  .upload-card:hover { border-color: #3f51b5; }
+  .upload-card h3 { font-size: 15px; color: #1a237e; margin-bottom: 6px; }
+  .upload-card p { font-size: 12px; color: #666; margin-bottom: 14px; }
+  .upload-card label {
+    display: block; cursor: pointer;
+    background: #e8eaf6; color: #3f51b5;
+    padding: 10px 18px; border-radius: 8px;
+    font-size: 13px; font-weight: 500; text-align: center;
+    transition: background 0.2s;
+  }
+  .upload-card label:hover { background: #c5cae9; }
+  .upload-card input[type=file] { display: none; }
+  .file-status { margin-top: 10px; font-size: 12px; color: #4caf50; font-weight: 500; min-height: 18px; }
+  .file-status.error { color: #f44336; }
+  .file-status.warn  { color: #f57f17; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 12px 28px; border-radius: 8px; font-size: 14px;
+    font-weight: 600; cursor: pointer; border: none; transition: all 0.2s;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, #1a237e, #1565c0);
+    color: white; box-shadow: 0 4px 12px rgba(21,101,192,0.4);
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(21,101,192,0.5); }
+  .btn-primary:disabled { background: #b0bec5; box-shadow: none; transform: none; cursor: not-allowed; }
+  .btn-download {
+    background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7;
+    font-size: 12px; padding: 7px 16px;
+  }
+  .btn-download:hover { background: #c8e6c9; }
+  .btn-full-report {
+    background: linear-gradient(135deg, #2e7d32, #388e3c);
+    color: white; box-shadow: 0 4px 12px rgba(46,125,50,0.3);
+    font-size: 13px; padding: 10px 22px;
+  }
+  .btn-full-report:hover { transform: translateY(-1px); }
+
+  .action-bar {
+    background: white; border-radius: 12px; padding: 20px 24px;
+    display: flex; align-items: center; gap: 16px; margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    flex-wrap: wrap;
+  }
+
+  .results-section { display: none; }
+
+  .stats-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 16px;
+  }
+
+  .effort-banner {
+    background: white; border-radius: 12px; padding: 20px 24px; margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-left: 5px solid #2e7d32;
+  }
+  .effort-banner-title { font-size: 14px; font-weight: 700; color: #1a237e; margin-bottom: 16px; }
+  .effort-cards { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .effort-card {
+    background: #f8f9fa; border-radius: 10px; padding: 14px 18px; text-align: center;
+    min-width: 130px; flex: 1;
+  }
+  .effort-card.sap     { background: #fff3f3; border: 2px solid #ffcdd2; }
+  .effort-card.figaf   { background: #f1f8e9; border: 2px solid #c5e1a5; }
+  .effort-card.savings-card { background: #e8f5e9; border: 2px solid #a5d6a7; }
+  .effort-card.pct-card     { background: #e3f2fd; border: 2px solid #90caf9; }
+  .effort-icon { font-size: 22px; margin-bottom: 4px; }
+  .effort-val  { font-size: 26px; font-weight: 800; color: #1a237e; }
+  .effort-card.sap .effort-val   { color: #c62828; }
+  .effort-card.figaf .effort-val { color: #2e7d32; }
+  .savings-val { color: #1b5e20 !important; }
+  .pct-val     { color: #1565c0 !important; }
+  .effort-lbl  { font-size: 11px; color: #555; margin-top: 4px; line-height: 1.4; }
+  .effort-sub  { font-size: 10px; color: #888; }
+  .effort-arrow { font-size: 24px; color: #aaa; flex-shrink: 0; }
+  .effort-arrow.savings { color: #2e7d32; }
+  .effort-note { margin-top: 12px; font-size: 11px; color: #888; border-top: 1px solid #f0f0f0; padding-top: 8px; }
+  .stat-card {
+    background: white; border-radius: 12px; padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    text-align: center; border-top: 4px solid #3f51b5;
+  }
+  .stat-card.green { border-top-color: #4caf50; }
+  .stat-card.amber { border-top-color: #ff9800; }
+  .stat-card.red { border-top-color: #f44336; }
+  .stat-card .value { font-size: 32px; font-weight: 700; color: #1a237e; }
+  .stat-card .label { font-size: 12px; color: #666; margin-top: 4px; }
+
+  .tabs-container {
+    background: white; border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08); overflow: hidden;
+  }
+  .tab-nav {
+    display: flex; background: #f5f5f5; border-bottom: 1px solid #e0e0e0;
+  }
+  .tab-btn {
+    flex: 1; padding: 14px 20px; font-size: 13px; font-weight: 600;
+    background: none; border: none; cursor: pointer;
+    color: #666; border-bottom: 3px solid transparent;
+    transition: all 0.2s; text-align: center;
+  }
+  .tab-btn:hover { color: #1a237e; background: #e8eaf6; }
+  .tab-btn.active { color: #1a237e; border-bottom-color: #1a237e; background: white; }
+  .tab-count {
+    display: inline-block; background: #e8eaf6; color: #3f51b5;
+    border-radius: 12px; padding: 2px 8px; font-size: 11px; margin-left: 6px;
+  }
+  .tab-btn.active .tab-count { background: #1a237e; color: white; }
+
+  .tab-content { display: none; padding: 20px; }
+  .tab-content.active { display: block; }
+
+  .tab-toolbar {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;
+  }
+  .tab-summary { font-size: 13px; color: #555; }
+  .tab-summary strong { color: #1a237e; }
+
+  .search-input {
+    padding: 8px 14px; border: 1px solid #e0e0e0; border-radius: 8px;
+    font-size: 13px; width: 240px;
+  }
+  .search-input:focus { outline: none; border-color: #3f51b5; }
+
+  .table-wrapper { overflow-x: auto; max-height: 560px; overflow-y: auto; }
+  table {
+    width: 100%; border-collapse: collapse; font-size: 11px;
+    table-layout: fixed;   /* enforces column widths */
+  }
+  /* Column widths — total ≈ 1125px, fits comfortably at 1280px screens */
+  col.c-seq    { width: 35px;  }
+  col.c-sap    { width: 55px;  }
+  col.c-ico    { width: 42px;  }
+  col.c-piobj  { width: 175px; }
+  col.c-ssys   { width: 90px;  }
+  col.c-stype  { width: 68px;  }
+  col.c-rtype  { width: 80px;  }
+  col.c-stype2 { width: 65px;  }
+  col.c-b2b    { width: 42px;  }
+  col.c-verdict{ width: 120px; }
+  col.c-score  { width: 50px;  }
+  col.c-effort { width: 52px;  }
+  col.c-sap2   { width: 62px;  }
+  col.c-mig    { width: 52px;  }
+  col.c-reuse  { width: 52px;  }
+  col.c-kf     { width: 105px; }
+
+  thead th {
+    background: #1a237e; color: white; padding: 8px 6px;
+    font-weight: 600; text-align: left; position: sticky; top: 0; z-index: 10;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11px;
+  }
+  tbody tr { border-bottom: 1px solid #f0f0f0; transition: background 0.1s; }
+  tbody tr:hover { background: #f5f7ff; }
+  tbody td { padding: 7px 6px; vertical-align: middle; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .badge {
+    display: inline-block; padding: 2px 7px; border-radius: 10px;
+    font-size: 10px; font-weight: 600; white-space: nowrap;
+  }
+  .badge-auto { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
+  .badge-manual { background: #fff8e1; color: #f57f17; border: 1px solid #ffe082; }
+  .badge-complex { background: #f3e5f5; color: #6a1b9a; border: 1px solid #ce93d8; }
+  .badge-redesign { background: #ffebee; color: #c62828; border: 1px solid #ef9a9a; }
+  .badge-migrated { background: #e3f2fd; color: #1565c0; border: 1px solid #90caf9; }
+
+  .score-bar-wrap { display: flex; align-items: center; gap: 8px; }
+  .score-bar { height: 6px; border-radius: 3px; flex: 1; background: #e0e0e0; min-width: 60px; }
+  .score-fill { height: 100%; border-radius: 3px; }
+  .score-val { font-weight: 700; font-size: 12px; min-width: 28px; }
+
+  .tags-cell { font-size: 11px; color: #555; max-width: 180px; line-height: 1.4; }
+  .tag-chip {
+    display: inline-block; background: #e8eaf6; color: #3f51b5;
+    border-radius: 4px; padding: 1px 6px; font-size: 10px; margin: 1px 1px 1px 0;
+  }
+  .tag-chip.b2b { background: #fce4ec; color: #880e4f; }
+  .tag-chip.manual { background: #fff3e0; color: #e65100; }
+
+  .effort-cell { font-weight: 700; font-size: 13px; }
+  .effort-auto { color: #2e7d32; }
+  .effort-manual { color: #f57f17; }
+  .effort-complex { color: #6a1b9a; }
+
+  .ico-cell { font-size: 11px; color: #555; max-width: 260px; word-break: break-all; line-height: 1.4; }
+  .ico-num { font-weight: 700; color: #1a237e; font-size: 13px; }
+
+  .sap-effort { font-size: 11px; color: #888; }
+
+  .legend {
+    display: flex; gap: 16px; flex-wrap: wrap; padding: 12px 20px;
+    background: #fafafa; border-top: 1px solid #e0e0e0; font-size: 11px;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 50%; }
+
+  /* ── Detail Modal ─────────────────────────────────────────────────────── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+    z-index: 1000; align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: white; border-radius: 14px; width: 720px; max-width: 96vw;
+    max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    animation: slideIn 0.18s ease;
+  }
+  @keyframes slideIn { from { transform: translateY(-20px); opacity:0; } to { transform: translateY(0); opacity:1; } }
+
+  .modal-header {
+    padding: 18px 22px 14px; border-bottom: 1px solid #e8eaf6;
+    display: flex; justify-content: space-between; align-items: flex-start;
+    position: sticky; top: 0; background: white; z-index: 10;
+  }
+  .modal-header h2 { font-size: 15px; color: #1a237e; font-weight: 700; margin: 0; }
+  .modal-header p  { font-size: 11px; color: #888; margin: 3px 0 0; word-break: break-all; }
+  .modal-close {
+    background: none; border: none; font-size: 20px; cursor: pointer;
+    color: #999; padding: 0 4px; line-height: 1; flex-shrink: 0;
+  }
+  .modal-close:hover { color: #333; }
+  .modal-body { padding: 0 22px 20px; }
+
+  .modal-verdict-bar {
+    display: flex; align-items: center; gap: 12px; padding: 14px 0 10px;
+    border-bottom: 1px solid #f0f0f0; flex-wrap: wrap;
+  }
+  .modal-verdict-badge {
+    padding: 5px 14px; border-radius: 20px; font-size: 13px; font-weight: 700;
+  }
+  .mv-auto    { background:#e8f5e9; color:#2e7d32; border:1px solid #a5d6a7; }
+  .mv-manual  { background:#fff8e1; color:#f57f17; border:1px solid #ffe082; }
+  .mv-complex { background:#f3e5f5; color:#6a1b9a; border:1px solid #ce93d8; }
+  .mv-redesign{ background:#ffebee; color:#c62828; border:1px solid #ef9a9a; }
+  .mv-migrated{ background:#e3f2fd; color:#1565c0; border:1px solid #90caf9; }
+
+  .modal-kpis { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+  .modal-kpi {
+    background: #f5f7ff; border-radius: 8px; padding: 8px 14px;
+    text-align: center; min-width: 80px;
+  }
+  .modal-kpi .kv { font-size: 18px; font-weight: 800; color: #1a237e; }
+  .modal-kpi .kl { font-size: 10px; color: #777; margin-top: 2px; }
+  .modal-kpi.green .kv { color: #2e7d32; }
+  .modal-kpi.amber .kv { color: #f57f17; }
+  .modal-kpi.red   .kv { color: #c62828; }
+  .modal-kpi.sav   .kv { color: #1565c0; }
+
+  .modal-section { margin-top: 14px; }
+  .modal-section-title {
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+    color: #1a237e; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
+  }
+  .modal-section-title::after {
+    content: ''; flex: 1; height: 1px; background: #e8eaf6;
+  }
+
+  .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; }
+  .modal-field { font-size: 12px; }
+  .modal-field .lbl { color: #888; font-size: 10px; text-transform: uppercase; letter-spacing: 0.3px; }
+  .modal-field .val { color: #222; font-weight: 500; margin-top: 1px; word-break: break-all; }
+
+  .activity-list { list-style: none; padding: 0; margin: 0; }
+  .activity-list li {
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 6px 0; border-bottom: 1px solid #f5f5f5; font-size: 12px;
+  }
+  .activity-list li:last-child { border-bottom: none; }
+  .act-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+  .act-name { font-weight: 600; color: #333; }
+  .act-note { font-size: 11px; color: #888; margin-top: 1px; }
+  .act-cost { margin-left: auto; font-size: 11px; font-weight: 700;
+              background: #f0f0f0; border-radius: 4px; padding: 2px 6px; flex-shrink: 0; }
+  .act-cost.auto    { background:#e8f5e9; color:#2e7d32; }
+  .act-cost.manual  { background:#fff8e1; color:#f57f17; }
+  .act-cost.redesign{ background:#ffebee; color:#c62828; }
+  .act-cost.reused  { background:#e3f2fd; color:#1565c0; }
+
+  .om-list { list-style: none; padding: 0; margin: 0; }
+  .om-list li {
+    display: flex; align-items: center; gap: 8px;
+    padding: 5px 8px; border-radius: 6px; margin-bottom: 4px;
+    background: #f0f4ff; border: 1px solid #c5cae9; font-size: 11px;
+  }
+  .om-list li .om-icon { font-size: 13px; flex-shrink: 0; }
+  .om-list li .om-name { font-family: monospace; color: #1a237e; word-break: break-all; }
+  .om-list li.om-fl { background: #fff8e1; border-color: #ffe082; }
+  .om-list li.om-fl .om-name { color: #7f4b0c; }
+  .om-empty { font-size: 11px; color: #aaa; font-style: italic; }
+
+  .reuse-ref-list { font-size: 11px; }
+  .reuse-ref-item {
+    background: #e3f2fd; border-radius: 6px; padding: 6px 10px;
+    margin-bottom: 4px; color: #1565c0;
+  }
+  .reuse-ref-item .rr-ico { font-weight: 700; }
+  .reuse-ref-item .rr-obj { color: #555; font-size: 10px; }
+
+  .tag-list { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+  .tag-item {
+    background: #e8eaf6; color: #3f51b5; border-radius: 4px;
+    padding: 2px 7px; font-size: 10px;
+  }
+  .tag-item.b2b { background: #fce4ec; color: #880e4f; }
+
+  .verdict-cell-clickable { cursor: pointer; user-select: none; }
+  .verdict-cell-clickable:hover .badge { opacity: 0.85; box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
+  .reuse-clickable:hover { opacity: 0.82; transform: scale(1.05); }
+
+  /* ── Reuse Popup ──────────────────────────────────────────────────────── */
+  .rp-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+    z-index: 1100; align-items: center; justify-content: center;
+  }
+  .rp-overlay.open { display: flex; }
+  .rp-box {
+    background: white; border-radius: 12px; width: 600px; max-width: 96vw;
+    max-height: 85vh; overflow-y: auto; box-shadow: 0 16px 48px rgba(0,0,0,0.28);
+    animation: slideIn 0.15s ease;
+  }
+  .rp-header {
+    padding: 16px 20px 12px; border-bottom: 1px solid #e8eaf6;
+    display: flex; justify-content: space-between; align-items: flex-start;
+    position: sticky; top: 0; background: white; z-index: 5;
+  }
+  .rp-header h3 { font-size: 14px; font-weight: 700; color: #1a237e; margin: 0; }
+  .rp-header p  { font-size: 10px; color: #888; margin: 3px 0 0; word-break: break-all; }
+  .rp-close { background: none; border: none; font-size: 18px; cursor: pointer; color: #aaa; }
+  .rp-close:hover { color: #333; }
+  .rp-body { padding: 14px 20px 18px; }
+
+  .rp-section-title {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.5px; color: #1a237e; margin-bottom: 6px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .rp-section-title::after { content:''; flex:1; height:1px; background:#e8eaf6; }
+  .rp-note { font-size: 11px; color: #888; margin-bottom: 10px; }
+
+  .rp-ref-card {
+    border: 1px solid #e3f2fd; border-radius: 10px; overflow: hidden;
+    margin-bottom: 10px;
+  }
+  .rp-new-card {
+    border: 1px solid #e8f5e9; border-radius: 10px; overflow: hidden;
+    padding: 10px 12px;
+  }
+  .rp-ref-header {
+    background: #e3f2fd; padding: 9px 12px;
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  .rp-ref-ico  { font-weight: 700; color: #1565c0; font-size: 12px; flex-shrink: 0; }
+  .rp-ref-pi   { font-size: 10px; color: #555; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rp-ref-open {
+    background: #1565c0; color: white; border: none; border-radius: 6px;
+    padding: 4px 10px; font-size: 11px; font-weight: 600; cursor: pointer;
+    flex-shrink: 0; white-space: nowrap;
+  }
+  .rp-ref-open:hover { background: #0d47a1; }
+  .rp-ref-objects { padding: 10px 12px; background: white; }
+
+  .rp-obj-row {
+    display: flex; align-items: flex-start; gap: 8px; margin-bottom: 6px;
+    flex-wrap: wrap;
+  }
+  .rp-obj-row:last-child { margin-bottom: 0; }
+  .rp-obj-rule {
+    background: #fff8e1; color: #f57f17; border-radius: 4px;
+    padding: 2px 7px; font-size: 10px; font-weight: 700; flex-shrink: 0;
+  }
+  .rp-obj-name {
+    background: #f5f5f5; color: #444; border-radius: 4px;
+    padding: 2px 7px; font-size: 10px; font-family: monospace;
+    max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+
+  .progress-bar-wrap { background: #f5f5f5; border-radius: 8px; padding: 16px 20px; margin-bottom: 20px; }
+  .progress-bar-wrap h4 { font-size: 13px; color: #555; margin-bottom: 10px; }
+  .progress-bar { height: 24px; background: #e0e0e0; border-radius: 12px; overflow: hidden; display: flex; }
+  .progress-seg { height: 100%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: white; transition: width 0.5s; }
+
+  /* ── One-Time Activities Tab ────────────────────────────────────────────── */
+  .ot-banner {
+    display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 18px;
+  }
+  .ot-kpi {
+    background: #f8f9ff; border-radius: 10px; padding: 14px 16px; text-align: center;
+    border: 1px solid #e8eaf6;
+  }
+  .ot-kpi .ov { font-size: 26px; font-weight: 800; color: #1a237e; }
+  .ot-kpi .ol { font-size: 11px; color: #666; margin-top: 3px; }
+  .ot-kpi.green  { background:#f1f8e9; border-color:#c5e1a5; }
+  .ot-kpi.green .ov { color:#2e7d32; }
+  .ot-kpi.amber  { background:#fff8e1; border-color:#ffe082; }
+  .ot-kpi.amber .ov { color:#f57f17; }
+  .ot-kpi.red    { background:#fff3e0; border-color:#ffcc80; }
+  .ot-kpi.red .ov { color:#e65100; }
+
+  .conn-table { width:100%; border-collapse:collapse; font-size:11px; table-layout:fixed; }
+  .conn-table col.ct-seq   { width:32px; }
+  .conn-table col.ct-type  { width:110px; }
+  .conn-table col.ct-sys   { width:170px; }
+  .conn-table col.ct-dir   { width:65px; }
+  .conn-table col.ct-cnt   { width:55px; }
+  .conn-table col.ct-eff   { width:80px; }
+  .conn-table col.ct-icos  { width:auto; }
+
+  .conn-table thead th {
+    background:#1a237e; color:white; padding:8px 6px;
+    font-weight:600; text-align:left; position:sticky; top:0; z-index:10;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:11px;
+  }
+  .conn-table tbody tr { border-bottom:1px solid #f0f0f0; }
+  .conn-table tbody tr:hover { background:#f5f7ff; }
+  .conn-table tbody td { padding:7px 6px; vertical-align:middle; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+  .conn-effort-high   { background:#fff3e0; color:#bf360c; border:1px solid #ffcc80; }
+  .conn-effort-med    { background:#fff8e1; color:#f57f17; border:1px solid #ffe082; }
+  .conn-effort-low    { background:#e8f5e9; color:#2e7d32; border:1px solid #a5d6a7; }
+
+  .conn-dir-badge {
+    display:inline-block; padding:2px 7px; border-radius:8px; font-size:9px; font-weight:700;
+  }
+  .dir-sender   { background:#e8eaf6; color:#3f51b5; }
+  .dir-receiver { background:#fce4ec; color:#880e4f; }
+  .dir-both     { background:#e8f5e9; color:#2e7d32; }
+
+  .ico-badge-mini {
+    display:inline-block; background:#e3f2fd; color:#1565c0;
+    border:1px solid #90caf9; border-radius:10px;
+    padding:1px 6px; font-size:9px; font-weight:700;
+    cursor:pointer; margin:1px; white-space:nowrap;
+  }
+  .ico-badge-mini:hover { background:#1565c0; color:white; }
+  .ico-badge-more {
+    display:inline-block; background:#f5f5f5; color:#888;
+    border:1px solid #e0e0e0; border-radius:10px;
+    padding:1px 6px; font-size:9px; cursor:default; margin:1px;
+  }
+
+  .conn-type-group {
+    background:#e8eaf6; font-size:10px; font-weight:700; color:#1a237e;
+    padding:4px 8px; letter-spacing:0.4px;
+  }
+
+  .no-data { text-align: center; padding: 40px; color: #999; font-size: 14px; }
+  .spinner { border: 3px solid #e0e0e0; border-top: 3px solid #1a237e; border-radius: 50%; width: 20px; height: 20px; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .processing-msg { display: none; align-items: center; gap: 10px; font-size: 13px; color: #666; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-icon">🔄</div>
+  <div>
+    <h1>SAP PI/PO Migration Assessment Tool</h1>
+    <p>Combines SAP Migration Evaluation with Figaf Tool Assessment — FIGAF Assessment Input rules applied automatically</p>
+  </div>
+  <div style="margin-left:auto;display:flex;flex-direction:column;align-items:center;gap:4px">
+    <a href="https://figaf.com" target="_blank" rel="noopener" title="Powered by Figaf"
+       style="display:flex;flex-direction:column;align-items:center;gap:5px;text-decoration:none">
+      <img src="https://figaf.com/wp-content/uploads/2020/06/cropped-200617_Favicon_logo_KW-1-192x192.png"
+           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
+           alt="Figaf"
+           style="height:90px;width:90px;object-fit:contain;background:white;border-radius:14px;padding:8px;box-shadow:0 4px 16px rgba(0,0,0,0.3)">
+      <span style="display:none;flex-direction:column;align-items:flex-end">
+        <span style="font-size:22px;font-weight:800;letter-spacing:1px;color:#fff">FIGAF</span>
+        <span style="font-size:9px;color:rgba(255,255,255,0.7);letter-spacing:2px;text-transform:uppercase">Migration Tool</span>
+      </span>
+    </a>
+    <span style="font-size:10px;color:rgba(255,255,255,0.55);letter-spacing:1.5px;text-transform:uppercase;font-weight:500">Powered by Figaf</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="upload-section">
+    <div class="upload-card">
+      <h3>📊 Step 1 — SAP Evaluation Report</h3>
+      <p>SAP_evaluation_run_results_*.xlsx — provides baseline effort estimation per interface</p>
+      <label for="sapFile">📁 Choose SAP Excel File</label>
+      <input type="file" id="sapFile" accept=".xlsx,.xls">
+      <div class="file-status" id="sapStatus"></div>
+    </div>
+    <div class="upload-card">
+      <h3>🚀 Step 2 — Figaf Migration Overview</h3>
+      <p>Figaf_migration-overview-*.xlsx — PI Landscape with tags, adapters, and migration details</p>
+      <label for="figafFile">📁 Choose Figaf Excel File</label>
+      <input type="file" id="figafFile" accept=".xlsx,.xls">
+      <div class="file-status" id="figafStatus"></div>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:12px;padding:10px 0 4px;flex-wrap:wrap">
+    <label style="font-size:12px;font-weight:600;color:#444;white-space:nowrap">
+      ⚙️ Base migration effort per ICO:
+    </label>
+    <div style="display:flex;align-items:center;gap:6px">
+      <input type="number" id="baseEffortInput" value="0.5" min="0.1" max="5" step="0.1"
+        style="width:70px;padding:4px 8px;border:1px solid #ccc;border-radius:6px;font-size:13px;font-weight:600;text-align:center"
+        oninput="updateBaseEffortLabel(this.value)">
+      <span style="font-size:12px;color:#666">days</span>
+      <span id="baseEffortHint" style="font-size:11px;color:#888;margin-left:4px">(= 4h at 8h/day)</span>
+    </div>
+    <span style="font-size:11px;color:#aaa">Applied as the fixed base cost for every non-migrated ICO, on top of any rule-specific effort.</span>
+  </div>
+
+  <div class="action-bar">
+    <button class="btn btn-primary" id="processBtn" disabled onclick="processFiles()">
+      ⚡ Generate Assessment
+    </button>
+    <div class="processing-msg" id="processingMsg">
+      <div class="spinner"></div> Analysing interfaces and applying FIGAF Assessment rules…
+    </div>
+    <div style="flex:1"></div>
+    <button class="btn btn-full-report" id="fullReportBtn" style="display:none" onclick="downloadFullReport()">
+      ⬇️ Download Full Report (Excel)
+    </button>
+  </div>
+
+  <div class="results-section" id="resultsSection">
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="value" id="statTotal">0</div>
+        <div class="label">Total Unique ICOs</div>
+      </div>
+      <div class="stat-card green">
+        <div class="value" id="statAuto">0</div>
+        <div class="label">Auto-Migrate</div>
+      </div>
+      <div class="stat-card amber">
+        <div class="value" id="statManual">0</div>
+        <div class="label">Manual Steps Required</div>
+      </div>
+      <div class="stat-card red">
+        <div class="value" id="statB2B">0</div>
+        <div class="label">B2B Integration</div>
+      </div>
+    </div>
+
+    <!-- Effort Comparison Banner -->
+    <div class="effort-banner" id="effortBanner" style="display:none">
+      <div class="effort-banner-title">⚡ Effort Comparison: SAP Manual Migration vs. FIGAF Automated</div>
+      <div class="effort-cards">
+        <div class="effort-card sap">
+          <div class="effort-icon">🏢</div>
+          <div class="effort-val" id="effortSAP">—</div>
+          <div class="effort-lbl">SAP Baseline (avg days)<br><span class="effort-sub" id="effortSAPRange"></span></div>
+        </div>
+        <div class="effort-arrow">→</div>
+        <div class="effort-card figaf">
+          <div class="effort-icon">🚀</div>
+          <div class="effort-val" id="effortFigaf">—</div>
+          <div class="effort-lbl">FIGAF Effort (days)</div>
+        </div>
+        <div class="effort-arrow savings">🎯</div>
+        <div class="effort-card savings-card">
+          <div class="effort-icon">💰</div>
+          <div class="effort-val savings-val" id="effortSavings">—</div>
+          <div class="effort-lbl">Days Saved</div>
+        </div>
+        <div class="effort-card pct-card">
+          <div class="effort-icon">📈</div>
+          <div class="effort-val pct-val" id="effortPct">—</div>
+          <div class="effort-lbl">Cost Reduction</div>
+        </div>
+      </div>
+      <div class="effort-note" id="effortNote"></div>
+    </div>
+
+    <div class="tabs-container">
+      <div class="tab-nav">
+        <button class="tab-btn active" onclick="switchTab('total', this)">
+          📋 Total Scenarios <span class="tab-count" id="cntTotal">0</span>
+        </button>
+        <button class="tab-btn" onclick="switchTab('a2a', this)">
+          🔗 A2A Integration <span class="tab-count" id="cntA2A">0</span>
+        </button>
+        <button class="tab-btn" onclick="switchTab('b2b', this)">
+          🤝 B2B Integration <span class="tab-count" id="cntB2B">0</span>
+        </button>
+        <button class="tab-btn" onclick="switchTab('onetime', this)">
+          🔌 One-Time Activities <span class="tab-count" id="cntOnetime">0</span>
+        </button>
+      </div>
+
+      <!-- TOTAL TAB -->
+      <div class="tab-content active" id="tab-total">
+        <div class="tab-toolbar">
+          <div class="tab-summary" id="summaryTotal"></div>
+          <div style="display:flex;gap:10px;align-items:center">
+            <input type="text" class="search-input" placeholder="🔍 Search ICO / system / tag…" oninput="filterTable('total', this.value)">
+            <button class="btn btn-download" id='dlBtn_total' onclick="downloadTab('total')">⬇️ Download Tab</button>
+          </div>
+        </div>
+        <div class="table-wrapper"><table id="tblTotal"><thead></thead><tbody></tbody></table></div>
+        <div class="legend">
+          <span class="legend-item"><span class="legend-dot" style="background:#4caf50"></span>Auto-Migrate (score ≥ 80)</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#ff9800"></span>Manual Steps (55–79)</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#9c27b0"></span>Complex (30–54)</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#f44336"></span>Needs Redesign (&lt;30)</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#2196f3"></span>Already Migrated</span>
+        </div>
+      </div>
+
+      <!-- A2A TAB -->
+      <div class="tab-content" id="tab-a2a">
+        <div class="tab-toolbar">
+          <div class="tab-summary" id="summaryA2A"></div>
+          <div style="display:flex;gap:10px;align-items:center">
+            <input type="text" class="search-input" placeholder="🔍 Search ICO / system / tag…" oninput="filterTable('a2a', this.value)">
+            <button class="btn btn-download" id='dlBtn_a2a' onclick="downloadTab('a2a')">⬇️ Download Tab</button>
+          </div>
+        </div>
+        <div class="table-wrapper"><table id="tblA2A"><thead></thead><tbody></tbody></table></div>
+        <div class="legend">
+          <span class="legend-item"><span class="legend-dot" style="background:#4caf50"></span>Auto-Migrate</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#ff9800"></span>Manual Steps</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#9c27b0"></span>Complex</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#f44336"></span>Needs Redesign</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#2196f3"></span>Already Migrated</span>
+        </div>
+      </div>
+
+      <!-- B2B TAB -->
+      <div class="tab-content" id="tab-b2b">
+        <div class="tab-toolbar">
+          <div class="tab-summary" id="summaryB2B"></div>
+          <div style="display:flex;gap:10px;align-items:center">
+            <input type="text" class="search-input" placeholder="🔍 Search ICO / system / tag…" oninput="filterTable('b2b', this.value)">
+            <button class="btn btn-download" id='dlBtn_b2b' onclick="downloadTab('b2b')">⬇️ Download Tab</button>
+          </div>
+        </div>
+        <div class="table-wrapper"><table id="tblB2B"><thead></thead><tbody></tbody></table></div>
+        <div class="legend">
+          <span class="legend-item"><span class="legend-dot" style="background:#4caf50"></span>Auto-Migrate</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#ff9800"></span>Manual Steps</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#9c27b0"></span>Complex</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#f44336"></span>Needs Redesign</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#2196f3"></span>Already Migrated</span>
+        </div>
+      </div>
+
+      <!-- ONE-TIME ACTIVITIES TAB -->
+      <div class="tab-content" id="tab-onetime">
+        <div class="tab-toolbar">
+          <div class="tab-summary" id="summaryOnetime"></div>
+          <input type="text" class="search-input" placeholder="🔍 Search adapter / system…" oninput="filterOnetimeTable(this.value)">
+          <button class="btn btn-download" onclick="downloadOnetimeJSON()" title="Download selected items as JSON migration plan"
+            style="white-space:nowrap;padding:6px 14px;font-size:12px">
+            ⬇️ Download JSON
+          </button>
+        </div>
+        <!-- KPI Banner -->
+        <div class="ot-banner" id="otBanner"></div>
+        <!-- Connections table -->
+        <div class="table-wrapper">
+          <table class="conn-table" id="tblOnetime">
+            <colgroup>
+              <col style="width:36px"><col class="ct-seq"><col class="ct-type"><col class="ct-sys">
+              <col class="ct-dir"><col class="ct-cnt"><col class="ct-eff"><col class="ct-icos">
+            </colgroup>
+            <thead><tr>
+              <th title="Include in migration plan" style="width:36px;text-align:center">
+                <input type="checkbox" id="onetimeSelectAll" title="Select / deselect all"
+                  onchange="onetimeToggleAll(this.checked)" checked
+                  style="width:14px;height:14px;cursor:pointer">
+              </th>
+              <th title="#">#</th>
+              <th title="Adapter Type">Adapter Type</th>
+              <th title="Endpoints / Systems using this adapter">Endpoints / Systems</th>
+              <th title="Used as Sender, Receiver or Both">Direction</th>
+              <th title="Number of ICOs using this connection">ICO Count</th>
+              <th title="One-time setup effort">Setup Effort</th>
+              <th title="ICOs using this connection — click to view details">ICOs Using This Connection</th>
+            </tr></thead>
+            <tbody id="tblOnetimeBody"></tbody>
+          </table>
+        </div>
+        <div class="legend" style="margin-top:8px">
+          <span class="legend-item"><span class="legend-dot" style="background:#7f4b0c"></span>B2B MIG creation — reused across interfaces</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#bf360c"></span>Complex channel setup — B2B/EDI connections, JDBC</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#f57f17"></span>Standard channel setup — RFC, IDoc, SFTP…</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#2e7d32"></span>Lightweight setup — HTTP, SOAP, FILE…</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── State ────────────────────────────────────────────────────────────────────
+let sapData = null, figafData = null;
+let allICOs = [], a2aICOs = [], b2bICOs = [];
+let oneTimeConnections = [];
+let onetimeIgnored = new Set(); // keys of items excluded from migration plan
+
+// ─── Adapter Module Reimplementation Strategies ───────────────────────────────
+// Fetched from SAP Help Portal on load. Falls back to FALLBACK_MODULE_STRATEGIES.
+// Source: https://help.sap.com/docs/migration-guide-po/migration-guide-for-sap-process-orchestration/adapter-modules
+const SAP_HELP_URL = 'https://help.sap.com/docs/migration-guide-po/migration-guide-for-sap-process-orchestration/adapter-modules';
+
+// Fallback strategies — updated from SAP Help Portal as of 2026-06
+const FALLBACK_MODULE_STRATEGIES = {
+  'AF_Modules/PayloadSwapBean':           { strategy:'Replace with Content Modifier or Script step in iFlow', approach:'Auto' },
+  'AF_Modules/MessageTransformBean':      { strategy:'Use built-in Message Transformer in Cloud Integration', approach:'Auto' },
+  'AF_Modules/DynamicConfigurationBean':  { strategy:'Figaf auto-migrates to iFlow Properties', approach:'Auto' },
+  'AF_Modules/AF_Modules/MessageCompress':{ strategy:'Use ZIP/GZIP Encoder step in iFlow', approach:'Manual' },
+  'AF_Modules/RequestResponseBean':       { strategy:'Redesign using Request-Reply step pattern', approach:'Redesign' },
+  'GenericConverterModule':               { strategy:'Replace with Message Mapping or XSLT Mapping step', approach:'Manual' },
+  'TPMContentAccessModule':               { strategy:'Handled by Figaf TPM migration — no extra effort', approach:'Auto' },
+  '_default_':                            { strategy:'Custom Groovy script required — review PI module logic and reimplement', approach:'Manual' }
+};
+
+let moduleStrategies    = { ...FALLBACK_MODULE_STRATEGIES };
+let moduleStrategiesMeta = { source:'fallback', fetchedAt: null, url: SAP_HELP_URL };
+
+// Try to fetch live strategies from SAP Help Portal on page load
+(async function fetchModuleStrategies() {
+  try {
+    const resp = await fetch(SAP_HELP_URL, { mode:'cors' });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const html = await resp.text();
+    const parsed = parseSAPHelpModuleStrategies(html);
+    if (parsed && Object.keys(parsed).length > 1) {
+      moduleStrategies = { ...FALLBACK_MODULE_STRATEGIES, ...parsed };
+      moduleStrategiesMeta = { source:'live', fetchedAt: new Date().toISOString(), url: SAP_HELP_URL };
+      console.log('[ModuleStrategies] Live data loaded:', Object.keys(parsed).length, 'entries');
+    } else {
+      moduleStrategiesMeta = { source:'fallback', fetchedAt: new Date().toISOString(), url: SAP_HELP_URL };
+    }
+  } catch(e) {
+    moduleStrategiesMeta = { source:'fallback', fetchedAt: new Date().toISOString(), url: SAP_HELP_URL };
+    console.warn('[ModuleStrategies] Could not fetch live page, using fallback:', e.message);
+  }
+})();
+
+// Parse module strategy table from SAP Help Portal HTML
+function parseSAPHelpModuleStrategies(html) {
+  const result = {};
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    // Look for tables with module names and strategy columns
+    doc.querySelectorAll('table').forEach(tbl => {
+      const rows = [...tbl.querySelectorAll('tr')];
+      if (rows.length < 2) return;
+      const headers = [...rows[0].querySelectorAll('th,td')].map(c => c.textContent.trim().toLowerCase());
+      const modIdx  = headers.findIndex(h => h.includes('module') || h.includes('adapter'));
+      const strIdx  = headers.findIndex(h => h.includes('strateg') || h.includes('approach') || h.includes('migrat'));
+      if (modIdx === -1 || strIdx === -1) return;
+      rows.slice(1).forEach(row => {
+        const cells = [...row.querySelectorAll('td')];
+        if (cells.length <= Math.max(modIdx, strIdx)) return;
+        const mod  = cells[modIdx].textContent.trim();
+        const strat = cells[strIdx].textContent.trim();
+        if (mod && strat) result[mod] = { strategy: strat, approach: detectApproach(strat) };
+      });
+    });
+  } catch(e) { /* ignore parse errors */ }
+  return result;
+}
+
+function detectApproach(strategyText) {
+  const t = strategyText.toLowerCase();
+  if (t.includes('auto') || t.includes('figaf') || t.includes('no action')) return 'Auto';
+  if (t.includes('redesign') || t.includes('not possible') || t.includes('rewrite')) return 'Redesign';
+  return 'Manual';
+}
+
+function getModuleStrategy(moduleName) {
+  if (!moduleName) return FALLBACK_MODULE_STRATEGIES['_default_'];
+  // Exact match first
+  if (moduleStrategies[moduleName]) return moduleStrategies[moduleName];
+  // Prefix match (e.g. AF_Modules/*)
+  const key = Object.keys(moduleStrategies).find(k => k !== '_default_' &&
+    (moduleName.toLowerCase().includes(k.toLowerCase()) || k.toLowerCase().includes(moduleName.toLowerCase())));
+  return key ? moduleStrategies[key] : moduleStrategies['_default_'];
+}
+
+
+// Configurable base effort (days) per non-migrated ICO — set via UI input
+let BASE_EFFORT = 0.5;
+
+function updateBaseEffortLabel(val) {
+  const v = parseFloat(val);
+  if (isNaN(v) || v <= 0) return;
+  BASE_EFFORT = v;
+  const hours = Math.round(v * 8 * 10) / 10;
+  document.getElementById('baseEffortHint').textContent = `(= ${hours}h at 8h/day)`;
+}
+
+// ─── FIGAF Assessment Input Rules (from FIGAF Assessment Input.txt) ──────────
+// AUTO     → detected/shown, 0 extra effort, 0 score impact
+// MANUAL   → +1× BASE_EFFORT each, -10 score each  (migration possible with manual steps)
+// REDESIGN → +2-4× BASE_EFFORT each, -25 score each, forces Needs Redesign verdict
+//
+// `effort` is stored as a MULTIPLIER of BASE_EFFORT (not absolute days).
+// e.g. effort:1 = 1× BASE_EFFORT, effort:2 = 2× BASE_EFFORT, etc.
+// This means all costs scale proportionally when the user changes the base effort input.
+
+const RULES_AUTO = [
+  { name: 'B2B Mapping',
+    check: (ico) => hasTag(ico.allSenderTags,'b2b_mapping') || hasTag(ico.allReceiverTags,'b2b_mapping'),
+    note: 'Migration possible — MIGs created as one-time activity (no extra effort)', effort: 0 },
+  { name: 'XSLT Mapping',
+    check: (ico) => hasTag(ico.allSenderTags,'xslt_om') || hasTag(ico.allReceiverTags,'xslt_om'),
+    note: 'Auto Migration', effort: 0 },
+  { name: 'Mapping – Context/Queue Functions',
+    check: (ico) => hasTag(ico.allReceiverTags,'contextfunctions') || hasTag(ico.allReceiverTags,'singlevalue'),
+    note: 'Auto Migration', effort: 0 },
+  { name: 'Mapping – Large/Complex Bricks',
+    check: (ico) => hasTag(ico.allReceiverTags,'mm300') || hasTag(ico.allReceiverTags,'mm25nodes') || hasTag(ico.allReceiverTags,'mmwith'),
+    note: 'Auto Migration', effort: 0 },
+  { name: 'Dynamic Configuration',
+    check: (ico) => ico.hasDynamicConfig,
+    note: 'Auto Migration — Figaf converts to Properties', effort: 0 },
+  { name: 'Adapter Module',
+    check: (ico) => ico.hasCustomModule,
+    note: 'Custom Groovy module required — development effort tracked in One-Time Activities', effort: 0 },
+];
+
+const RULES_MANUAL = [
+  { name: 'JAVA Mapping',
+    check: (ico) => hasTag(ico.allSenderTags,'java_om') || hasTag(ico.allReceiverTags,'java_om'),
+    note: 'Migration possible — developer must manually verify implementation', effort: 1 },
+  { name: 'EDI Separator',
+    check: (ico) => ico.senderTypes.some(t => t.toLowerCase().includes('ediseparator')) ||
+                    ico.receiverTypes.some(t => t.toLowerCase().includes('ediseparator')),
+    note: 'Migration possible — TPM setup needs manual activity', effort: 1 },
+  { name: 'REST with JSON Conversion',
+    check: (ico) => hasTag(ico.allSenderTags,'restwithjson') || hasTag(ico.allReceiverTags,'restwithjson'),
+    note: 'Migration possible — manual configuration changes required', effort: 1 },
+];
+
+const RULES_REDESIGN = [
+  { name: 'nwBPM',
+    check: (ico) => ico.hasBPM,
+    note: 'Migration NOT possible — requires redesign (~4× base effort)', effort: 4 },
+  { name: 'ABAP Mapping',
+    check: (ico) => hasTag(ico.allSenderTags,'abap') || hasTag(ico.allReceiverTags,'abap'),
+    note: 'Migration NOT possible — requires architectural redesign', effort: 2 },
+];
+
+// Per-rule effort lookup: multiplier × BASE_EFFORT = extra days for that rule
+const RULE_EFFORT = {};
+[...RULES_MANUAL, ...RULES_REDESIGN].forEach(r => { RULE_EFFORT[r.name] = r.effort; });
+
+// ─── One-Time Connection Setup — effort by adapter type ───────────────────────
+// Key = lowercase adapter type (or prefix match); value = { effort, label, note, tier }
+const CONN_META = {
+  // B2B / EDI — partner profiles + agreements (complex)
+  'ediseparator': { effort:1.0, label:'EDI Separator', note:'TPM partner profile + EDI agreement',   tier:'B2B' },
+  'as2':          { effort:1.0, label:'AS2',           note:'AS2 partner profile + certificate',     tier:'B2B' },
+  'oftp':         { effort:1.0, label:'OFTP',          note:'OFTP partner profile setup',            tier:'B2B' },
+  'rnif':         { effort:1.0, label:'RNIF',          note:'RosettaNet partner setup',              tier:'B2B' },
+  // Heavy — database / directory
+  'jdbc':         { effort:0.2, label:'JDBC',          note:'JDBC datasource + DB credentials',      tier:'Heavy' },
+  'ldap':         { effort:1.0, label:'LDAP',          note:'LDAP server + directory credentials',   tier:'Heavy' },
+  // Standard — SAP & file transfer (~1-2 hours each)
+  'rfc':          { effort:0.2, label:'RFC',           note:'RFC destination + credentials',         tier:'Standard' },
+  'idoc':         { effort:0.2, label:'IDoc',          note:'IDoc channel + logical system',         tier:'Standard' },
+  'sftp':         { effort:0.2, label:'SFTP',          note:'SFTP host + SSH key / credentials',     tier:'Standard' },
+  'ftp':          { effort:0.2, label:'FTP',           note:'FTP host + credentials',                tier:'Standard' },
+  'ftps':         { effort:0.2, label:'FTPS',          note:'FTPS host + certificate + credentials', tier:'Standard' },
+  'jms':          { effort:0.2, label:'JMS',           note:'JMS broker + queue setup',              tier:'Standard' },
+  'xi':           { effort:0.2, label:'XI',            note:'XI channel configuration',              tier:'Standard' },
+  'mqseries':     { effort:0.2, label:'MQ Series',     note:'MQ Series queue manager setup',         tier:'Standard' },
+  // Lightweight — web / file (~1-2 hours each)
+  'http':         { effort:0.2, label:'HTTP',          note:'HTTP endpoint + authentication',        tier:'Light' },
+  'https':        { effort:0.2, label:'HTTPS',         note:'HTTPS endpoint + certificate',          tier:'Light' },
+  'soap':         { effort:0.2, label:'SOAP',          note:'SOAP endpoint + WSDL import',           tier:'Light' },
+  'ws':           { effort:0.2, label:'WS',            note:'Web Service endpoint',                  tier:'Light' },
+  'rest':         { effort:0.2, label:'REST',          note:'REST endpoint + OAuth / API key',       tier:'Light' },
+  'file':         { effort:0.2, label:'FILE',          note:'File directory + OS permissions',       tier:'Light' },
+  'mail':         { effort:0.2, label:'MAIL',          note:'Mail server + credentials',             tier:'Light' },
+};
+
+function getConnMeta(adapterType) {
+  const key = (adapterType || '').toLowerCase().replace(/\s+/g,'').replace(/_sender$|_receiver$/,'');
+  // Exact match first, then prefix match
+  if (CONN_META[key]) return CONN_META[key];
+  for (const [k, v] of Object.entries(CONN_META)) {
+    if (key.startsWith(k) || k.startsWith(key)) return v;
+  }
+  return { effort:0.5, label:adapterType||'Unknown', note:'Connection configuration required', tier:'Standard' };
+}
+
+// ─── Derive unique MIG name from Operation Mapping name ───────────────────────
+// e.g. "IKEA_ASC850_005010_to_ORDERS_ORDERS05" → "ASC850_005010"
+// e.g. "PARTNER_ORDERS_D96A_to_SAP_ORDERS"     → "ORDERS_D96A"
+function deriveMIGName(mappingName) {
+  if (!mappingName) return mappingName;
+
+  // Scan all segments across the full name so version info is found wherever it lives
+  const segs = mappingName.split('_').filter(Boolean);
+
+  for (let i = 0; i < segs.length; i++) {
+    const s = segs[i];
+
+    // ── X12: ASC/EDI prefix glued to 3-digit type, e.g. ASC850, EDI850
+    //    optionally followed by 6-digit version e.g. 005010
+    if (/^(ASC|EDI)\d{3}$/i.test(s)) {
+      const next = segs[i + 1];
+      return next && /^\d{6}$/.test(next)
+        ? `${s.toUpperCase()}_${next}`
+        : s.toUpperCase();
+    }
+
+    // ── X12: bare 3-digit transaction set preceded by alpha segment e.g. IKEA_850
+    if (/^\d{3}$/.test(s) && i > 0 && /^[A-Za-z]+$/.test(segs[i - 1])) {
+      const combined = segs[i - 1].toUpperCase() + s;
+      const next = segs[i + 1];
+      return next && /^\d{6}$/.test(next)
+        ? `${combined}_${next}`
+        : combined;
+    }
+
+    // ── EDIFACT glued: message type + version in one segment, e.g. ORDERS96A, INVOIC01B
+    //    Pattern: 4-6 uppercase letters immediately followed by 2-digit number + 1 letter
+    const edifactGlued = s.match(/^([A-Z]{4,6})(\d{2}[A-Z])$/i);
+    if (edifactGlued) {
+      return `${edifactGlued[1].toUpperCase()}_${edifactGlued[2].toUpperCase()}`;
+    }
+
+    // ── EDIFACT separate: message type then version as next segment, e.g. ORDERS_96A, INVOIC_D96A
+    if (/^[A-Z]{4,6}$/.test(s)) {
+      const next = segs[i + 1] || '';
+      // D96A style (letter + 2 digits + letter) or bare 96A style (2 digits + letter)
+      if (/^[A-Z]\d{2}[A-Z]$/i.test(next) || /^\d{2}[A-Z]$/i.test(next)) {
+        return `${s.toUpperCase()}_${next.toUpperCase()}`;
+      }
+    }
+  }
+
+  // Fallback: strip leading company-name segment (pure letters) and return next 2 segments
+  if (segs.length >= 2 && /^[A-Za-z]+$/.test(segs[0]) && !/^to$/i.test(segs[0])) {
+    return segs.slice(1, 3).join('_');
+  }
+
+  return mappingName; // last resort: use full name
+}
+
+function computeOneTimeConnections() {
+  // ── Part 1: Adapter Connections (unique adapter TYPE — effort charged once per type) ──
+  // Endpoints/systems are tracked as reference only, not multiplied into effort.
+  const connReg = {};
+
+  for (const ico of allICOs) {
+    const senderSys = (ico.senderSystem || ico.senderParty || '').trim() || '(unknown)';
+
+    for (const type of ico.senderTypes) {
+      if (!type) continue;
+      if (/ediseparator/i.test(type)) continue; // charged per-ICO in main assessment
+      const key = `conn|${type.toLowerCase()}`;
+      if (!connReg[key]) {
+        const meta = getConnMeta(type);
+        connReg[key] = { adapterType:type, label:meta.label, note:meta.note,
+          effort:meta.effort, tier:meta.tier,
+          endpoints: new Set(), icosSender:[], icosReceiver:[] };
+      }
+      connReg[key].endpoints.add(senderSys);
+      if (!connReg[key].icosSender.find(i => i.seq === ico.seq))
+        connReg[key].icosSender.push(ico);
+    }
+
+    const rcvSystems = ico.receiverSystems.filter(Boolean).length
+      ? ico.receiverSystems.filter(Boolean) : ['(unknown)'];
+    for (const type of ico.receiverTypes) {
+      if (!type) continue;
+      if (/ediseparator/i.test(type)) continue; // charged per-ICO in main assessment
+      const key = `conn|${type.toLowerCase()}`;
+      if (!connReg[key]) {
+        const meta = getConnMeta(type);
+        connReg[key] = { adapterType:type, label:meta.label, note:meta.note,
+          effort:meta.effort, tier:meta.tier,
+          endpoints: new Set(), icosSender:[], icosReceiver:[] };
+      }
+      rcvSystems.forEach(s => connReg[key].endpoints.add(s));
+      if (!connReg[key].icosReceiver.find(i => i.seq === ico.seq))
+        connReg[key].icosReceiver.push(ico);
+    }
+  }
+
+  // ── Part 2: B2B MIGs (derived from Operation Mapping names, grouped by EDI type+version) ──
+  const migReg = {};
+
+  for (const ico of allICOs) {
+    const isB2BorEDI =
+      (ico.activitiesAll || ico.detectedActivities || []).includes('B2B Mapping') ||
+      ico.senderTypes.some(t  => t.toLowerCase().includes('ediseparator')) ||
+      ico.receiverTypes.some(t => t.toLowerCase().includes('ediseparator'));
+    if (!isB2BorEDI) continue;
+
+    const omLines = (ico._omContent || '').split('\n').map(l => l.trim()).filter(Boolean);
+    for (const om of omLines) {
+      const migName = deriveMIGName(om);
+      const key = `mig|${migName.toLowerCase()}`;
+      if (!migReg[key]) {
+        migReg[key] = {
+          adapterType:'B2B MIG', label:'B2B MIG', system:migName, tier:'MIG',
+          note:'Message Implementation Guideline — created once, reused across B2B interfaces',
+          effort:0.1, icosSender:[], icosReceiver:[],
+          originalMappings: new Set()
+        };
+      }
+      migReg[key].originalMappings.add(om);
+      if (!migReg[key].icosSender.find(i => i.seq === ico.seq))
+        migReg[key].icosSender.push(ico);
+    }
+  }
+
+  // ── Part 3: Adapter Modules (unique Groovy module — develop once, reuse across ICOs) ──
+  const moduleReg = {};
+  for (const ico of allICOs) {
+    for (const modName of (ico.customModuleNames || [])) {
+      const key = `mod|${modName.toLowerCase()}`;
+      if (!moduleReg[key]) {
+        moduleReg[key] = {
+          adapterType:'Adapter Module', label: modName, system: modName, tier:'Module',
+          note:'Custom Groovy adapter module — developed once, reused across ICOs',
+          effort: 2 * BASE_EFFORT,
+          icosSender:[], icosReceiver:[], endpoints: new Set()
+        };
+      }
+      if (!moduleReg[key].icosSender.find(i => i.seq === ico.seq))
+        moduleReg[key].icosSender.push(ico);
+    }
+  }
+
+  // ── Enrich both sets and return combined ─────────────────────────────────────
+  function enrich(entries, isMIG, isModule) {
+    return entries.map(c => {
+      const allIcos = [...new Map(
+        [...c.icosSender, ...c.icosReceiver].map(i => [i.seq, i])
+      ).values()].sort((a,b) => a.seq - b.seq);
+      const direction = c.icosSender.length && c.icosReceiver.length ? 'Both'
+        : c.icosSender.length ? 'Sender' : 'Receiver';
+      const endpointList   = c.endpoints       ? [...c.endpoints].filter(Boolean).sort()       : (c.system ? [c.system] : []);
+      const originalMappings = c.originalMappings ? [...c.originalMappings].sort() : [];
+      return { ...c, allIcos, totalICOs: allIcos.length, direction, endpointList, originalMappings, _isMIG: isMIG, _isModule: !!isModule };
+    });
+  }
+
+  const connections = enrich(Object.values(connReg), false, false)
+    .sort((a,b) => b.effort - a.effort || a.label.localeCompare(b.label));
+  const migs = enrich(Object.values(migReg), true, false)
+    .sort((a,b) => a.system.localeCompare(b.system));
+  const modules = enrich(Object.values(moduleReg), false, true)
+    .sort((a,b) => a.system.localeCompare(b.system));
+
+  return [...connections, ...migs, ...modules];
+}
+
+const MANUAL_RULES = [...RULES_AUTO, ...RULES_MANUAL, ...RULES_REDESIGN];  // kept for legacy compat
+const MANUAL_NAMES   = new Set(RULES_MANUAL.map(r => r.name));
+const REDESIGN_NAMES = new Set(RULES_REDESIGN.map(r => r.name));
+
+function hasTag(tagStr, keyword) {
+  if (!tagStr) return false;
+  return tagStr.toLowerCase().includes(keyword.toLowerCase());
+}
+
+function isB2BICO(ico) {
+  // B2B if any sender/receiver tag contains "b2b", OR any adapter type is EDISeparator
+  const hasB2BTag = hasTag(ico.allSenderTags, 'b2b') || hasTag(ico.allReceiverTags, 'b2b');
+  const hasEDI    = ico.senderTypes.some(t => t.toLowerCase().includes('ediseparator')) ||
+                    ico.receiverTypes.some(t => t.toLowerCase().includes('ediseparator'));
+  return hasB2BTag || hasEDI;
+}
+
+// ─── File Validation helpers ──────────────────────────────────────────────────
+const SAP_SHEET   = 'Eval by Integration Scenario';
+const SAP_REQUIRED_COLS = [
+  'Integration Scenario',
+  'Average Effort Required (Hours)',
+];
+const SAP_RECOMMENDED_COLS = [
+  'Min Effort Required (Hours)',
+  'Max Effort Required (Hours)',
+  'Assessment Category',
+  'T-Shirt Size',
+];
+
+const FIGAF_SHEET  = 'PI Landscape';
+const FIGAF_REQUIRED_COLS = [
+  'PI object',
+  'Sender Type',
+  'Receiver Type',
+];
+const FIGAF_RECOMMENDED_COLS = [
+  'Sender System',
+  'Receiver System',
+  'Sender Tags',
+  'Receiver Tags',
+  'Sender Modules',
+  'Receiver Modules',
+  'Migrated',
+  'Scenario Type',
+];
+
+function validateFileExt(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (!['xlsx','xls'].includes(ext))
+    throw new Error(`File must be an Excel file (.xlsx or .xls) — got ".${ext}"`);
+}
+
+function getSheetHeaders(ws) {
+  // Read just the first row to get column names without loading all data
+  const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+  const headers = [];
+  for (let c = range.s.c; c <= range.e.c; c++) {
+    const cell = ws[XLSX.utils.encode_cell({ r: range.s.r, c })];
+    if (cell && cell.v != null) headers.push(String(cell.v).trim());
+  }
+  return headers;
+}
+
+function checkColumns(headers, required, recommended, fileLabel) {
+  const missing = required.filter(col => !headers.includes(col));
+  if (missing.length)
+    throw new Error(
+      `Wrong file — this does not look like the ${fileLabel}.\n` +
+      `Missing required column(s): ${missing.map(c => `"${c}"`).join(', ')}`
+    );
+  const missingRec = recommended.filter(col => !headers.includes(col));
+  return missingRec; // return optional missing cols for warning (non-fatal)
+}
+
+function setStatus(elId, type, msg) {
+  const el = document.getElementById(elId);
+  el.textContent = msg;
+  el.className = 'file-status' + (type === 'error' ? ' error' : type === 'warn' ? ' warn' : '');
+}
+
+// ─── File Loading ─────────────────────────────────────────────────────────────
+document.getElementById('sapFile').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  sapData = null; checkEnableProcess();
+  try { validateFileExt(file); } catch(err) {
+    setStatus('sapStatus', 'error', '✗ ' + err.message); return;
+  }
+  setStatus('sapStatus', '', '⏳ Reading…');
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      const wb = XLSX.read(ev.target.result, { type: 'array' });
+
+      // ── Sheet check ──────────────────────────────────────────────────────
+      if (!wb.Sheets[SAP_SHEET]) {
+        const available = wb.SheetNames.join(', ') || '(none)';
+        throw new Error(
+          `This does not look like the SAP Evaluation Report.\n` +
+          `Expected sheet: "${SAP_SHEET}"\n` +
+          `Sheets found: ${available}`
+        );
+      }
+
+      // ── Column check ─────────────────────────────────────────────────────
+      const headers   = getSheetHeaders(wb.Sheets[SAP_SHEET]);
+      const missingRec = checkColumns(headers, SAP_REQUIRED_COLS, SAP_RECOMMENDED_COLS, 'SAP Evaluation Report');
+
+      // ── Load data ────────────────────────────────────────────────────────
+      sapData = XLSX.utils.sheet_to_json(wb.Sheets[SAP_SHEET]);
+      if (sapData.length === 0)
+        throw new Error(`Sheet "${SAP_SHEET}" is empty — no data rows found.`);
+
+      if (missingRec.length) {
+        setStatus('sapStatus', 'warn',
+          `⚠ Loaded: ${file.name} (${sapData.length} rows) — optional columns missing: ${missingRec.join(', ')}`);
+      } else {
+        setStatus('sapStatus', '', `✓ Loaded: ${file.name} (${sapData.length} scenarios)`);
+      }
+      checkEnableProcess();
+    } catch(err) {
+      setStatus('sapStatus', 'error', '✗ ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+});
+
+document.getElementById('figafFile').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  figafData = null; checkEnableProcess();
+  try { validateFileExt(file); } catch(err) {
+    setStatus('figafStatus', 'error', '✗ ' + err.message); return;
+  }
+  setStatus('figafStatus', '', '⏳ Reading…');
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      const wb = XLSX.read(ev.target.result, { type: 'array' });
+
+      // ── Sheet check ──────────────────────────────────────────────────────
+      if (!wb.Sheets[FIGAF_SHEET]) {
+        const available = wb.SheetNames.join(', ') || '(none)';
+        throw new Error(
+          `This does not look like the Figaf Migration Overview.\n` +
+          `Expected sheet: "${FIGAF_SHEET}"\n` +
+          `Sheets found: ${available}`
+        );
+      }
+
+      // ── Column check ─────────────────────────────────────────────────────
+      const headers    = getSheetHeaders(wb.Sheets[FIGAF_SHEET]);
+      const missingRec = checkColumns(headers, FIGAF_REQUIRED_COLS, FIGAF_RECOMMENDED_COLS, 'Figaf Migration Overview');
+
+      // ── Load data ────────────────────────────────────────────────────────
+      const landscape = XLSX.utils.sheet_to_json(wb.Sheets[FIGAF_SHEET]);
+      if (landscape.length === 0)
+        throw new Error(`Sheet "${FIGAF_SHEET}" is empty — no data rows found.`);
+
+      const wsOverview = wb.Sheets['Migration Overview'];
+      figafData = {
+        landscape,
+        overview: wsOverview ? XLSX.utils.sheet_to_json(wsOverview) : []
+      };
+
+      if (missingRec.length) {
+        setStatus('figafStatus', 'warn',
+          `⚠ Loaded: ${file.name} (${landscape.length} rows) — optional columns missing: ${missingRec.join(', ')}`);
+      } else {
+        setStatus('figafStatus', '', `✓ Loaded: ${file.name} (${landscape.length} rows)`);
+      }
+      checkEnableProcess();
+    } catch(err) {
+      setStatus('figafStatus', 'error', '✗ ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+});
+
+function checkEnableProcess() {
+  document.getElementById('processBtn').disabled = !(sapData && figafData);
+}
+
+// ─── Processing ───────────────────────────────────────────────────────────────
+function processFiles() {
+  // Read configurable base effort before analysis
+  const inputVal = parseFloat(document.getElementById('baseEffortInput').value);
+  BASE_EFFORT = (!isNaN(inputVal) && inputVal > 0) ? inputVal : 0.5;
+  updateBaseEffortLabel(BASE_EFFORT);
+
+  document.getElementById('processingMsg').style.display = 'flex';
+  document.getElementById('processBtn').disabled = true;
+  setTimeout(() => {
+    try {
+      runAnalysis();
+    } catch(err) {
+      alert('Processing error: ' + err.message);
+      console.error(err);
+    }
+    document.getElementById('processingMsg').style.display = 'none';
+    document.getElementById('processBtn').disabled = false;
+  }, 50);
+}
+
+function runAnalysis() {
+  // Build SAP baseline map: scenario → {avgEffort, assessmentCategory, tshirt}
+  const sapMap = {};
+  for (const row of sapData) {
+    const key = String(row['Integration Scenario'] || '').trim();
+    if (key) {
+      sapMap[key] = {
+        avgEffort: parseFloat(row['Average Effort Required (Hours)']) || 0,
+        minEffort: parseFloat(row['Min Effort Required (Hours)']) || 0,
+        maxEffort: parseFloat(row['Max Effort Required (Hours)']) || 0,
+        category: String(row['Assessment Category'] || ''),
+        tshirt: String(row['T-Shirt Size'] || '')
+      };
+    }
+  }
+
+  // Group Figaf PI Landscape by PI object
+  const groupedICOs = {};
+  for (const row of figafData.landscape) {
+    const key = String(row['PI object'] || '').trim();
+    if (!key) continue;
+    if (!groupedICOs[key]) groupedICOs[key] = [];
+    groupedICOs[key].push(row);
+  }
+
+  // Build Migration Overview map
+  const overviewMap = {};
+  for (const row of figafData.overview) {
+    const key = String(row['PI object'] || '').trim();
+    if (!overviewMap[key]) overviewMap[key] = row;
+  }
+
+  // Assess each ICO
+  let globalSeq = 0;
+  allICOs = [];
+
+  for (const [piObject, rows] of Object.entries(groupedICOs)) {
+    globalSeq++;
+    const ico = buildICO(piObject, rows, sapMap, overviewMap, globalSeq);
+    allICOs.push(ico);
+  }
+
+  // Sort: migrated last, then by score desc
+  allICOs.sort((a, b) => {
+    if (a.migrated !== b.migrated) return a.migrated ? 1 : -1;
+    return b.score - a.score;
+  });
+
+  // Renumber after sort
+  allICOs.forEach((ico, i) => ico.seq = i + 1);
+
+  // ── Reuse pass: apply global object registry ──────────────────────────────
+  // Rules that can be reused across ICOs (same artefact, migrate once)
+  const REUSABLE_RULES = new Set([
+    'B2B Mapping', 'JAVA Mapping', 'XSLT Mapping', 'ABAP Mapping',
+    'Adapter Module', 'Mapping with Context/Queue Functions'
+  ]);
+  const globalRegistry = {};  // objectKey → {ico, seq}
+
+  for (const ico of allICOs) {
+    const activitiesCharged = [];
+    const activitiesReused  = [];
+    const reuseRefs         = [];
+    const newObjects        = [];
+
+    for (const rule of ico.detectedActivities) {
+      const objKeys = getReusableObjects(ico, rule);
+      if (!REUSABLE_RULES.has(rule) || objKeys.size === 0) {
+        activitiesCharged.push(rule);
+        continue;
+      }
+      let allReused = true;
+      for (const okey of objKeys) {
+        if (!globalRegistry[okey]) {
+          globalRegistry[okey] = { pi: ico.piObject, seq: ico.seq };
+          newObjects.push({ rule, okey });
+          allReused = false;
+        } else {
+          const first = globalRegistry[okey];
+          if (first.seq < ico.seq) {
+            // Genuine reuse — object was first used by a DIFFERENT (earlier) ICO
+            reuseRefs.push({ rule, okey, firstPi: first.pi, firstSeq: first.seq });
+          } else {
+            // Same ICO registered this object via a different rule — not a cross-ICO reuse
+            allReused = false;
+          }
+        }
+      }
+      if (!allReused) activitiesCharged.push(rule);
+      else            activitiesReused.push(rule);
+    }
+
+    ico.activitiesAll     = ico.detectedActivities.slice();
+    ico.detectedActivities= activitiesCharged;
+    ico.activitiesReused  = activitiesReused;
+    ico.reuseRefs         = reuseRefs;
+    ico.newObjects        = newObjects;
+    ico.isReuse           = activitiesReused.length > 0;
+    // Recalculate effort with reuse (Already Migrated stays 0)
+    ico.effortNoReuse = ico.effort;
+    if (!ico.migrated) {
+      const mc = activitiesCharged.filter(n => MANUAL_NAMES.has(n)).length;
+      const rc = activitiesCharged.filter(n => REDESIGN_NAMES.has(n)).length;
+      ico.effort = BASE_EFFORT + activitiesCharged.reduce((sum, n) => sum + (RULE_EFFORT[n] || 0) * BASE_EFFORT, 0);
+      // Recalculate verdict after reuse (a fully-reused manual activity may change verdict)
+      if (rc > 0)      ico.verdict = 'Needs Redesign';
+      else if (mc > 0) ico.verdict = 'Migrate + Manual Steps';
+      else             ico.verdict = 'Auto-Migrate';
+    }
+    // Reuse summary text
+    ico.reuseSummary = reuseRefs.slice(0,3).map(r =>
+      `${r.rule} → ICO #${r.firstSeq} (${r.firstPi.split('|')[1] || r.firstPi.substring(0,25)})`
+    ).join('; ') + (reuseRefs.length > 3 ? `; +${reuseRefs.length-3} more` : '');
+  }
+
+  function getReusableObjects(ico, rule) {
+    const keys = new Set();
+    const omContent = ico._omContent || '';
+    const fl        = ico._fl        || '';
+    const sm        = ico._sm        || '';
+    const rm        = ico._rm        || '';
+    const splitLines = s => s.split('\n').map(x => x.trim()).filter(Boolean);
+
+    if (rule === 'B2B Mapping') {
+      splitLines(fl).forEach(k => keys.add('FL:' + k));
+    } else if (rule === 'JAVA Mapping' || rule === 'XSLT Mapping' || rule === 'ABAP Mapping') {
+      splitLines(omContent).forEach(k => keys.add('OM:' + k));
+      if (keys.size === 0) keys.add('OM_TAG:' + rule);
+    } else if (rule === 'Adapter Module') {
+      const STANDARD = /^(AF_Modules\/|TPMContentAccessModule|GenericConverterModule)/i;
+      splitLines(sm).concat(splitLines(rm)).forEach(m => {
+        if (!STANDARD.test(m)) keys.add('MOD:' + m);
+      });
+    } else if (rule === 'Mapping with Context/Queue Functions') {
+      splitLines(omContent).forEach(k => keys.add('OM:' + k));
+    }
+    return keys;
+  }
+
+  a2aICOs = allICOs.filter(ico => !ico.isB2B);
+  b2bICOs = allICOs.filter(ico => ico.isB2B);
+
+  // Update stats
+  const autoCount = allICOs.filter(i => i.verdict === 'Auto-Migrate').length;
+  const manualCount = allICOs.filter(i => i.verdict === 'Migrate + Manual Steps').length;
+  document.getElementById('statTotal').textContent = allICOs.length;
+  document.getElementById('statAuto').textContent = autoCount;
+  document.getElementById('statManual').textContent = manualCount;
+  document.getElementById('statB2B').textContent = b2bICOs.length;
+  document.getElementById('cntTotal').textContent = allICOs.length;
+  document.getElementById('cntA2A').textContent = a2aICOs.length;
+  document.getElementById('cntB2B').textContent = b2bICOs.length;
+
+  // ── Effort comparison banner ──────────────────────────────────────────────
+  const matchedICOs    = allICOs.filter(i => i.sapAvgDays);
+  const sapAvgTotal    = matchedICOs.reduce((s,i) => s + i.sapAvgDays, 0);
+  const sapMinTotal    = matchedICOs.reduce((s,i) => s + (i.sapMinDays||0), 0);
+  const sapMaxTotal    = matchedICOs.reduce((s,i) => s + (i.sapMaxDays||0), 0);
+  const figafMatched   = matchedICOs.reduce((s,i) => s + i.effort, 0);
+  const figafAll       = allICOs.reduce((s,i) => s + i.effort, 0);
+  const unmatched      = allICOs.length - matchedICOs.length;
+  const avgSapPerICO   = matchedICOs.length ? sapAvgTotal / matchedICOs.length : 0;
+  const sapEstAll      = sapAvgTotal + unmatched * avgSapPerICO;
+  const savings        = sapAvgTotal - figafMatched;
+  const savingsPct     = sapAvgTotal ? (savings / sapAvgTotal * 100) : 0;
+  const savingsEst     = sapEstAll - figafAll;
+  const savingsEstPct  = sapEstAll ? (savingsEst / sapEstAll * 100) : 0;
+
+  // Reuse stats
+  const reuseICOs      = allICOs.filter(i => i.isReuse);
+  const effortNoReuse  = allICOs.reduce((s,i) => s + i.effortNoReuse, 0);
+  const reuseSavings   = effortNoReuse - figafAll;
+
+  if (matchedICOs.length > 0) {
+    document.getElementById('effortSAP').textContent     = sapAvgTotal.toFixed(1) + 'd';
+    document.getElementById('effortFigaf').textContent   = figafMatched.toFixed(1) + 'd';
+    document.getElementById('effortSavings').textContent = savings.toFixed(1) + 'd';
+    document.getElementById('effortPct').textContent     = savingsPct.toFixed(1) + '%';
+    document.getElementById('effortSAPRange').textContent =
+      `Min: ${sapMinTotal.toFixed(1)}d  |  Max: ${sapMaxTotal.toFixed(1)}d`;
+    document.getElementById('effortNote').textContent =
+      `Matched to SAP: ${matchedICOs.length} ICOs  |  ` +
+      `Estimated all-ICO savings: ${savingsEst.toFixed(1)}d (${savingsEstPct.toFixed(1)}%)  |  ` +
+      `Reuse deduction: ${reuseICOs.length} ICOs share objects → saves ${reuseSavings.toFixed(1)}d  |  ` +
+      `FIGAF effort without reuse: ${effortNoReuse.toFixed(1)}d  →  with reuse: ${figafAll.toFixed(1)}d`;
+    document.getElementById('effortBanner').style.display = 'block';
+  }
+
+  renderSummary('total', allICOs);
+  renderSummary('a2a', a2aICOs);
+  renderSummary('b2b', b2bICOs);
+
+  renderTable('total', allICOs);
+  renderTable('a2a', a2aICOs);
+  renderTable('b2b', b2bICOs);
+
+  // One-Time Activities tab
+  oneTimeConnections = computeOneTimeConnections();
+  renderOneTimeTab();
+
+  document.getElementById('resultsSection').style.display = 'block';
+  document.getElementById('fullReportBtn').style.display = 'inline-flex';
+  document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function buildICO(piObject, rows, sapMap, overviewMap, seq) {
+  const first = rows[0];
+
+  // Collect aggregated values across all rows
+  const senderTypes = [...new Set(rows.map(r => String(r['Sender Type'] || '')).filter(Boolean))];
+  const receiverTypes = [...new Set(rows.map(r => String(r['Receiver Type'] || '')).filter(Boolean))];
+  const receiverSystems = [...new Set(rows.map(r => String(r['Receiver System'] || '')).filter(Boolean))];
+  const receiverParties = [...new Set(rows.map(r => String(r['Receiver Party'] || '')).filter(Boolean))];
+
+  const allSenderTagsArr = rows.map(r => String(r['Sender Tags'] || '')).filter(Boolean);
+  const allReceiverTagsArr = rows.map(r => String(r['Receiver Tags'] || '')).filter(Boolean);
+  const allSenderTags = allSenderTagsArr.join('\n');
+  const allReceiverTags = allReceiverTagsArr.join('\n');
+
+  // Collect unique tag chips for display
+  const senderTagChips = [...new Set(allSenderTagsArr.flatMap(t => t.split(/[\r\n,;]+/)).map(t => t.trim()).filter(Boolean))];
+  const receiverTagChips = [...new Set(allReceiverTagsArr.flatMap(t => t.split(/[\r\n,;]+/)).map(t => t.trim()).filter(Boolean))];
+
+  const allModulesSender = rows.map(r => String(r['Sender Modules'] || '')).filter(Boolean).join('\n');
+  const allModulesReceiver = rows.map(r => String(r['Receiver Modules'] || '')).filter(Boolean).join('\n');
+  const allBPMSender = rows.map(r => String(r['Sender BPM'] || '')).filter(Boolean).join('');
+  const allBPMReceiver = rows.map(r => String(r['Receiver BPM'] || '')).filter(Boolean).join('');
+
+  const hasBPM = allBPMSender.length > 0 || allBPMReceiver.length > 0;
+  const hasDynamicConfig = allModulesSender.toLowerCase().includes('dynamicconfiguration') ||
+                           allModulesReceiver.toLowerCase().includes('dynamicconfiguration');
+  // Custom adapter modules = non-standard modules requiring manual migration
+  // Standard/auto-handled: AF_Modules/*, TPMContentAccessModule, GenericConverterModule
+  const STANDARD_MODULES = /^(af_modules\/|tpmcontentaccessmodule|genericconvertermodule)/i;
+  function hasCustomMod(modsStr) {
+    return modsStr.split(/[\r\n]+/).map(m => m.trim()).filter(Boolean)
+      .some(m => !STANDARD_MODULES.test(m));
+  }
+  const hasCustomModule = hasCustomMod(allModulesSender) || hasCustomMod(allModulesReceiver);
+  // Collect unique custom module names for display in the modal
+  const customModuleNames = [...new Set(
+    [...allModulesSender.split(/[\r\n]+/), ...allModulesReceiver.split(/[\r\n]+/)]
+      .map(m => m.trim()).filter(Boolean)
+      .filter(m => !STANDARD_MODULES.test(m))
+  )];
+
+  const migrated = rows.some(r => String(r['Migrated'] || '').toLowerCase() === 'yes');
+  const scenarioType = String(first['Scenario Type'] || 'EXACTLY_ONCE');
+  const sapSystem = String(first['SAP System'] || 'D75');
+  const icoNumber = first['Number'] || seq;
+  const senderSystem = String(first['Sender System'] || '');
+  const senderParty = String(first['Sender Party'] || '');
+
+  // Build ICO object for rule checking
+  const icoObj = { allSenderTags, allReceiverTags, senderTypes, receiverTypes, hasBPM, hasCustomModule, hasDynamicConfig };
+
+  // Run manual activity detection
+  const detectedActivities = MANUAL_RULES.filter(rule => rule.check(icoObj)).map(rule => rule.name);
+  const isB2B = isB2BICO(icoObj);
+
+  // Score: -10 per MANUAL, -25 per REDESIGN, AUTO has no score impact
+  const manualActs   = detectedActivities.filter(n => MANUAL_NAMES.has(n));
+  const redesignActs = detectedActivities.filter(n => REDESIGN_NAMES.has(n));
+
+  // Effort: 0 for already-migrated, else 0.5d base + per-rule effort cost
+  const effort = migrated ? 0 : (BASE_EFFORT + detectedActivities.reduce((sum, n) => sum + (RULE_EFFORT[n] || 0) * BASE_EFFORT, 0));
+
+  // Score: -10 per MANUAL, -25 per REDESIGN; AUTO has no impact
+  const score = Math.max(0, 100 - manualActs.length * 10 - redesignActs.length * 25);
+
+  // Verdict — REDESIGN always forces Needs Redesign regardless of score
+  let verdict;
+  if (migrated) {
+    verdict = 'Already Migrated';
+  } else if (redesignActs.length > 0) {
+    verdict = 'Needs Redesign';
+  } else if (manualActs.length > 0) {
+    verdict = 'Migrate + Manual Steps';   // ANY manual activity → never Auto-Migrate
+  } else if (score >= 80) {
+    verdict = 'Auto-Migrate';
+  } else if (score >= 55) {
+    verdict = 'Migrate + Manual Steps';
+  } else if (score >= 30) {
+    verdict = 'Complex';
+  } else {
+    verdict = 'Needs Redesign';
+  }
+
+  // SAP baseline
+  const sapBaseline = sapMap[piObject] || null;
+  const sapAvgDays = sapBaseline ? parseFloat((sapBaseline.avgEffort / 8).toFixed(1)) : null;
+  const sapMinDays = sapBaseline ? parseFloat((sapBaseline.minEffort / 8).toFixed(1)) : null;
+  const sapMaxDays = sapBaseline ? parseFloat((sapBaseline.maxEffort / 8).toFixed(1)) : null;
+
+  // Raw reuse data (used in second-pass reuse registry)
+  const _omContent = rows.map(r => String(r['Operation Mapping Content'] || '')).filter(Boolean).join('\n');
+  const _fl        = rows.map(r => String(r['Function Libraries'] || '')).filter(Boolean).join('\n');
+  const _sm        = allModulesSender;
+  const _rm        = allModulesReceiver;
+
+  return {
+    seq,
+    sapSystem, icoNumber, piObject,
+    senderParty, senderSystem,
+    senderTypes, receiverTypes, receiverSystems, receiverParties,
+    senderTagChips, receiverTagChips,
+    allSenderTags, allReceiverTags,
+    scenarioType, isB2B, migrated,
+    verdict, score, effort,
+    detectedActivities,
+    // reuse fields (populated in second pass)
+    activitiesAll: detectedActivities.slice(),
+    activitiesReused: [], reuseRefs: [], newObjects: [],
+    isReuse: false, reuseSummary: '', effortNoReuse: effort,
+    // raw data for reuse detection
+    _omContent, _fl, _sm, _rm,
+    sapAvgDays, sapMinDays, sapMaxDays,
+    sapCategory: sapBaseline ? sapBaseline.category : '',
+    hasBPM, hasDynamicConfig, customModuleNames
+  };
+}
+
+// ─── Rendering ────────────────────────────────────────────────────────────────
+function verdictBadge(verdict) {
+  const cls = {
+    'Auto-Migrate': 'badge-auto',
+    'Migrate + Manual Steps': 'badge-manual',
+    'Complex': 'badge-complex',
+    'Needs Redesign': 'badge-redesign',
+    'Already Migrated': 'badge-migrated'
+  }[verdict] || 'badge-auto';
+  return `<span class="badge ${cls}">${verdict}</span>`;
+}
+
+function scoreColor(score) {
+  if (score >= 80) return '#4caf50';
+  if (score >= 55) return '#ff9800';
+  if (score >= 30) return '#9c27b0';
+  return '#f44336';
+}
+
+function effortClass(score) {
+  if (score >= 80) return 'effort-auto';
+  if (score >= 55) return 'effort-manual';
+  return 'effort-complex';
+}
+
+function renderSummary(tabId, icos) {
+  const auto = icos.filter(i => i.verdict === 'Auto-Migrate').length;
+  const manual = icos.filter(i => i.verdict === 'Migrate + Manual Steps').length;
+  const complex = icos.filter(i => i.verdict === 'Complex' || i.verdict === 'Needs Redesign').length;
+  const mig = icos.filter(i => i.migrated).length;
+  const totalEffort = icos.reduce((s, i) => s + i.effort, 0);
+  const summaryIdMap = {total:'Total', a2a:'A2A', b2b:'B2B'};
+  document.getElementById('summary' + summaryIdMap[tabId]).innerHTML =
+    `<strong>${icos.length}</strong> ICOs &nbsp;|&nbsp; ` +
+    `<span style="color:#2e7d32">Auto-Migrate: <strong>${auto}</strong></span> &nbsp;|&nbsp; ` +
+    `<span style="color:#f57f17">Manual Steps: <strong>${manual}</strong></span> &nbsp;|&nbsp; ` +
+    `<span style="color:#6a1b9a">Complex: <strong>${complex}</strong></span> &nbsp;|&nbsp; ` +
+    `<span style="color:#1565c0">Migrated: <strong>${mig}</strong></span> &nbsp;|&nbsp; ` +
+    `Total Effort: <strong>${totalEffort.toFixed(1)} days</strong>`;
+}
+
+function onetimeRowKey(c) {
+  return c._isMIG ? `mig|${c.system}` : c._isModule ? `mod|${c.system}` : `conn|${c.adapterType}`;
+}
+
+function onetimeToggleRow(key, checked) {
+  if (checked) onetimeIgnored.delete(key);
+  else         onetimeIgnored.add(key);
+  // Style the row
+  const row = document.querySelector(`#tblOnetimeBody tr[data-key="${CSS.escape(key)}"]`);
+  if (row) {
+    row.style.opacity    = checked ? '' : '0.35';
+    row.style.textDecoration = checked ? '' : 'line-through';
+  }
+  updateOnetimeKPIs();
+  // Update select-all checkbox state
+  const allBoxes = [...document.querySelectorAll('#tblOnetimeBody input[type=checkbox]')];
+  const allChecked = allBoxes.every(b => b.checked);
+  const someChecked = allBoxes.some(b => b.checked);
+  const selectAll = document.getElementById('onetimeSelectAll');
+  if (selectAll) { selectAll.checked = allChecked; selectAll.indeterminate = !allChecked && someChecked; }
+}
+
+function onetimeToggleAll(checked) {
+  document.querySelectorAll('#tblOnetimeBody input[type=checkbox]').forEach(cb => {
+    cb.checked = checked;
+    onetimeToggleRow(cb.dataset.key, checked);
+  });
+}
+
+function updateOnetimeKPIs() {
+  const active = oneTimeConnections.filter(c => !onetimeIgnored.has(onetimeRowKey(c)));
+  const totalEffort = active.reduce((s,c) => s+c.effort, 0);
+  const migConns  = active.filter(c =>  c._isMIG);
+  const modConns  = active.filter(c =>  c._isModule);
+  const chanConns = active.filter(c => !c._isMIG && !c._isModule);
+  const modEffort = modConns.reduce((s,c) => s+c.effort, 0);
+  const migEffort = migConns.reduce((s,c) => s+c.effort, 0);
+  const byTier = { B2B:[], Heavy:[], Standard:[], Light:[] };
+  chanConns.forEach(c => (byTier[c.tier] || byTier['Standard']).push(c));
+  const tierEffort = t => (byTier[t]||[]).reduce((s,c) => s+c.effort, 0);
+  const totalICOsBenefiting = new Set(active.flatMap(c => c.allIcos.map(i => i.seq))).size;
+
+  document.getElementById('otBanner').innerHTML = `
+    <div class="ot-kpi">
+      <div class="ov">${chanConns.length}</div>
+      <div class="ol">Connections Selected</div>
+    </div>
+    <div class="ot-kpi amber">
+      <div class="ov">${migConns.length}</div>
+      <div class="ol">B2B MIGs Selected</div>
+    </div>
+    <div class="ot-kpi" style="background:linear-gradient(135deg,#f3e5f5,#ede7f6)">
+      <div class="ov" style="color:#6a1b9a">${modConns.length}</div>
+      <div class="ol">Modules Selected</div>
+    </div>
+    <div class="ot-kpi red">
+      <div class="ov">${totalEffort.toFixed(1)}d</div>
+      <div class="ol">Selected Effort</div>
+    </div>`;
+
+  document.getElementById('summaryOnetime').innerHTML =
+    `<strong>${chanConns.length}</strong> connections &nbsp;|&nbsp; ` +
+    `<strong>${migConns.length}</strong> B2B MIGs &nbsp;|&nbsp; ` +
+    `<strong>${modConns.length}</strong> adapter modules &nbsp;|&nbsp; ` +
+    `Selected effort: <strong>${totalEffort.toFixed(1)} days</strong> &nbsp;|&nbsp; ` +
+    `<span style="color:#6a1b9a">Modules: <strong>${modEffort.toFixed(1)}d</strong></span> &nbsp;|&nbsp; ` +
+    `<span style="color:#7f4b0c">MIGs: <strong>${migEffort.toFixed(1)}d</strong></span> &nbsp;|&nbsp; ` +
+    `<span style="color:#bf360c">B2B/EDI: <strong>${tierEffort('B2B').toFixed(1)}d</strong></span> &nbsp;|&nbsp; ` +
+    `<span style="color:#f57f17">Standard: <strong>${tierEffort('Standard').toFixed(1)}d</strong></span>` +
+    (onetimeIgnored.size ? ` &nbsp;|&nbsp; <span style="color:#c62828">⚠ ${onetimeIgnored.size} item${onetimeIgnored.size>1?'s':''} excluded</span>` : '');
+}
+
+function renderOneTimeTab() {
+  onetimeIgnored.clear(); // reset on fresh render
+  const conns = oneTimeConnections;
+  const totalEffort = conns.reduce((s,c) => s + c.effort, 0);
+  const totalICOsBenefiting = new Set(conns.flatMap(c => c.allIcos.map(i => i.seq))).size;
+  const migConns  = conns.filter(c =>  c._isMIG);
+  const modConns  = conns.filter(c =>  c._isModule);
+  const chanConns = conns.filter(c => !c._isMIG && !c._isModule);
+
+  const byTier = { B2B:[], Heavy:[], Standard:[], Light:[] };
+  chanConns.forEach(c => (byTier[c.tier] || byTier['Standard']).push(c));
+  const tierEffort = t => (byTier[t] || []).reduce((s,c) => s+c.effort, 0);
+  const migEffort  = migConns.reduce((s,c) => s+c.effort, 0);
+  const modEffort  = modConns.reduce((s,c) => s+c.effort, 0);
+
+  // KPI Banner
+  document.getElementById('otBanner').innerHTML = `
+    <div class="ot-kpi">
+      <div class="ov">${chanConns.length}</div>
+      <div class="ol">Unique Connections to Set Up</div>
+    </div>
+    <div class="ot-kpi amber">
+      <div class="ov">${migConns.length}</div>
+      <div class="ol">B2B MIGs to Create</div>
+    </div>
+    <div class="ot-kpi" style="background:linear-gradient(135deg,#f3e5f5,#ede7f6)">
+      <div class="ov" style="color:#6a1b9a">${modConns.length}</div>
+      <div class="ol">Adapter Modules to Develop</div>
+    </div>
+    <div class="ot-kpi red">
+      <div class="ov">${totalEffort.toFixed(1)}d</div>
+      <div class="ol">Total One-Time Effort</div>
+    </div>`;
+
+  // Summary line
+  document.getElementById('summaryOnetime').innerHTML =
+    `<strong>${chanConns.length}</strong> connections &nbsp;|&nbsp; ` +
+    `<strong>${migConns.length}</strong> B2B MIGs &nbsp;|&nbsp; ` +
+    `<strong>${modConns.length}</strong> adapter modules &nbsp;|&nbsp; ` +
+    `Total one-time effort: <strong>${totalEffort.toFixed(1)} days</strong> &nbsp;|&nbsp; ` +
+    `<span style="color:#6a1b9a">Modules: <strong>${modEffort.toFixed(1)}d</strong></span> &nbsp;|&nbsp; ` +
+    `<span style="color:#7f4b0c">MIGs: <strong>${migEffort.toFixed(1)}d</strong></span> &nbsp;|&nbsp; ` +
+    `<span style="color:#bf360c">B2B/EDI: <strong>${tierEffort('B2B').toFixed(1)}d</strong></span> &nbsp;|&nbsp; ` +
+    `<span style="color:#f57f17">Standard: <strong>${tierEffort('Standard').toFixed(1)}d</strong></span>`;
+
+  document.getElementById('cntOnetime').textContent = conns.length;
+  renderOnetimeRows(conns);
+}
+
+function renderOnetimeRows(allConns) {
+  const tbody = document.getElementById('tblOnetimeBody');
+  if (!allConns.length) {
+    tbody.innerHTML = '<tr><td colspan="8" class="no-data">No connection data found</td></tr>';
+    return;
+  }
+
+  const connections = allConns.filter(c => !c._isMIG && !c._isModule);
+  const migs        = allConns.filter(c =>  c._isMIG);
+  const modules     = allConns.filter(c =>  c._isModule);
+
+  const CONN_TIER_ORDER  = ['B2B','Heavy','Standard','Light'];
+  const CONN_TIER_LABEL  = {
+    B2B:     '🤝 B2B / EDI Connections',
+    Heavy:   '🗄️ Database / Directory',
+    Standard:'⚙️ Standard Adapters',
+    Light:   '🌐 Lightweight / Web'
+  };
+
+  let html = '';
+  let seq = 0;
+
+  function connRow(c) {
+    seq++;
+    const effCls = c.effort >= 1.0 ? 'conn-effort-high' : c.effort >= 0.5 ? 'conn-effort-med' : 'conn-effort-low';
+    const dirCls = c.direction === 'Both' ? 'dir-both' : c.direction === 'Sender' ? 'dir-sender' : 'dir-receiver';
+    const MAX_SHOW = 8;
+    const shown = c.allIcos.slice(0, MAX_SHOW);
+    const rest  = c.allIcos.slice(MAX_SHOW);
+    const badges = shown.map(ico =>
+      `<span class="ico-badge-mini" onclick="showICODetail(allICOs[${ico.seq-1}])" title="${ico.piObject}">#${ico.seq}</span>`
+    ).join('') + (rest.length
+      ? `<span class="ico-badge-more" title="${rest.map(i=>'#'+i.seq+' '+i.piObject.substring(0,30)).join('\n')}">+${rest.length} more</span>`
+      : '');
+    const eps = c.endpointList || (c.system ? [c.system] : []);
+    const epDisplay = eps.slice(0,3).join(', ') + (eps.length > 3 ? ` +${eps.length-3} more` : '');
+    const epTitle   = eps.join('\n');
+
+    // Name cell varies by type
+    let nameCell, searchExtra = '';
+    if (c._isMIG) {
+      const origList = (c.originalMappings||[]);
+      const origTip  = origList.length ? `Derived from:\n${origList.join('\n')}` : c.system;
+      nameCell = `<td title="${origTip}">
+        <span style="font-weight:700;color:#7f4b0c;font-size:11px">${c.system}</span><br>
+        <span style="font-size:9px;color:#888">${origList.length > 1 ? origList.length+' mappings share this MIG' : (origList[0]||c.note)}</span>
+      </td>`;
+      searchExtra = origList.join(' ').toLowerCase();
+    } else if (c._isModule) {
+      const strat = getModuleStrategy(c.system);
+      const approachColor = strat.approach === 'Auto' ? '#2e7d32' : strat.approach === 'Redesign' ? '#c62828' : '#f57f17';
+      const srcLabel = moduleStrategiesMeta.source === 'live'
+        ? `<span title="Live from SAP Help Portal — fetched ${moduleStrategiesMeta.fetchedAt}" style="color:#1565c0;font-size:8px">● live</span>`
+        : `<span title="Fallback data — SAP Help Portal unavailable" style="color:#aaa;font-size:8px">● cached</span>`;
+      nameCell = `<td>
+        <span style="font-weight:700;color:#6a1b9a;font-size:11px">${c.system}</span><br>
+        <span style="font-size:9px;font-weight:600;color:${approachColor}">${strat.approach}</span>
+        <span style="font-size:9px;color:#555"> — ${strat.strategy}</span><br>
+        <a href="${SAP_HELP_URL}" target="_blank" rel="noopener"
+           style="font-size:9px;color:#1565c0;text-decoration:underline">📖 SAP Migration Guide</a>
+        &nbsp;${srcLabel}
+      </td>`;
+    } else {
+      nameCell = `<td title="${epTitle}">
+        <span style="font-size:10px;color:#444">${epDisplay || '—'}</span>
+      </td>`;
+    }
+
+    const rowKey = onetimeRowKey(c);
+    return `<tr data-search="${(c.label||'').toLowerCase()} ${(c.system||'').toLowerCase()} ${searchExtra} ${(c.tier||'').toLowerCase()}" data-key="${rowKey}">
+      <td style="text-align:center">
+        <input type="checkbox" checked data-key="${rowKey}"
+          onchange="onetimeToggleRow(this.dataset.key, this.checked)"
+          style="width:14px;height:14px;cursor:pointer" title="Include in migration plan">
+      </td>
+      <td style="text-align:center;color:#888;font-size:10px">${seq}</td>
+      <td title="${c.note}">
+        <span style="font-weight:700;color:#1a237e;font-size:11px">${c.label}</span><br>
+        <span style="font-size:9px;color:#888">${c.note}</span>
+      </td>
+      ${nameCell}
+      <td style="text-align:center"><span class="conn-dir-badge ${dirCls}">${c.direction}</span></td>
+      <td style="text-align:center;font-weight:700;color:#1a237e;font-size:13px">${c.totalICOs}</td>
+      <td style="text-align:center">
+        <span class="badge ${effCls}" style="font-size:11px;font-weight:700;padding:3px 10px">${c.effort.toFixed(1)}d</span>
+      </td>
+      <td style="white-space:normal">${badges}</td>
+    </tr>`;
+  }
+
+  // ── Section 1: Adapter Connections ─────────────────────────────────────────
+  if (connections.length) {
+    html += `<tr class="conn-type-group" style="background:#1a237e">
+      <td colspan="8" style="color:white;font-size:11px;font-weight:700;padding:6px 10px">
+        🔌 ADAPTER CONNECTIONS — ${connections.length} unique connections
+      </td></tr>`;
+    for (const tier of CONN_TIER_ORDER) {
+      const tierConns = connections.filter(c => (c.tier||'Standard') === tier);
+      if (!tierConns.length) continue;
+      html += `<tr class="conn-type-group"><td colspan="8">${CONN_TIER_LABEL[tier]}</td></tr>`;
+      tierConns.forEach(c => { html += connRow(c); });
+    }
+  }
+
+  // ── Section 2: B2B MIGs ────────────────────────────────────────────────────
+  if (migs.length) {
+    html += `<tr class="conn-type-group" style="background:#7f4b0c">
+      <td colspan="8" style="color:white;font-size:11px;font-weight:700;padding:6px 10px">
+        📋 B2B MIGs TO CREATE — ${migs.length} unique Message Implementation Guidelines
+      </td></tr>`;
+    migs.forEach(c => { html += connRow(c); });
+  }
+
+  // ── Section 3: Adapter Modules ─────────────────────────────────────────────
+  if (modules.length) {
+    const modTotalEff = modules.reduce((s,c) => s+c.effort, 0);
+    const srcBadge = moduleStrategiesMeta.source === 'live'
+      ? `<span style="font-size:9px;font-weight:400;opacity:0.8;margin-left:10px">📡 Strategies: live from SAP Help Portal</span>`
+      : `<span style="font-size:9px;font-weight:400;opacity:0.7;margin-left:10px">📋 Strategies: cached fallback
+         — <a href="${SAP_HELP_URL}" target="_blank" rel="noopener" style="color:#e1bee7">view SAP Help</a></span>`;
+    html += `<tr class="conn-type-group" style="background:#6a1b9a">
+      <td colspan="8" style="color:white;font-size:11px;font-weight:700;padding:6px 10px">
+        🔧 ADAPTER MODULES TO DEVELOP — ${modules.length} unique Groovy modules · Total dev effort: ${modTotalEff.toFixed(1)}d ${srcBadge}
+      </td></tr>`;
+    modules.forEach(c => { html += connRow(c); });
+  }
+
+  tbody.innerHTML = html;
+}
+
+function filterOnetimeTable(query) {
+  const q = query.toLowerCase();
+  document.querySelectorAll('#tblOnetimeBody tr[data-search]').forEach(row => {
+    row.style.display = (!q || row.dataset.search.includes(q)) ? '' : 'none';
+  });
+}
+
+function renderTable(tabId, icos) {
+  const tblIdMap = {total:'Total', a2a:'A2A', b2b:'B2B'};
+  const table = document.getElementById('tbl' + tblIdMap[tabId]);
+
+  // colgroup for fixed layout widths (total ≈ 1280px)
+  table.innerHTML = `
+  <colgroup>
+    <col class="c-seq">    <!-- # -->
+    <col class="c-sap">    <!-- SAP System -->
+    <col class="c-ico">    <!-- ICO # -->
+    <col class="c-piobj">  <!-- PI Object -->
+    <col class="c-ssys">   <!-- Sender System -->
+    <col class="c-stype">  <!-- Sender Type -->
+    <col class="c-rtype">  <!-- Receiver Type(s) -->
+    <col class="c-stype2"> <!-- Scenario Type -->
+    <col class="c-b2b">    <!-- B2B? -->
+    <col class="c-verdict"><!-- FIGAF Verdict -->
+    <col class="c-score">  <!-- Score -->
+    <col class="c-effort"> <!-- Effort -->
+    <col class="c-sap2">   <!-- SAP Baseline -->
+    <col class="c-mig">    <!-- Migrated? -->
+    <col class="c-reuse">  <!-- Reuse? -->
+    <col class="c-kf">     <!-- Key Factors -->
+  </colgroup>
+  <thead><tr>
+    <th title="#">#</th>
+    <th title="SAP System">SAP Sys</th>
+    <th title="ICO Number">ICO #</th>
+    <th title="${tabId === 'b2b' ? 'Operation Mapping — used for B2B migration' : 'PI Object (Scenario)'}">${tabId === 'b2b' ? 'Operation Mapping' : 'PI Object (Scenario)'}</th>
+    <th title="Sender System">Sender System</th>
+    <th title="Sender Type">Sender Type</th>
+    <th title="Receiver Type(s)">Rcv Type(s)</th>
+    <th title="Scenario Type">Scenario</th>
+    <th title="B2B or A2A">${tabId === 'total' ? 'B2B?' : 'B2B?'}</th>
+    <th title="FIGAF Verdict — click for full details">FIGAF Verdict ℹ</th>
+    <th title="Score /100">Score</th>
+    <th title="Effort in Days">Effort</th>
+    <th title="SAP Baseline (Average Days)">SAP Base</th>
+    <th title="Already Migrated?">Migrated</th>
+    <th title="Object Reuse">Reuse?</th>
+    <th title="Key Complexity Factors (click verdict for full details)">Key Factors</th>
+  </tr></thead>
+  <tbody></tbody>`;
+
+  const tbody = table.querySelector('tbody');
+  if (icos.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="16" class="no-data">No data found</td></tr>';
+    return;
+  }
+
+  for (const ico of icos) {
+    const color = scoreColor(ico.score);
+
+    // B2B cell
+    const b2bCell = ico.isB2B
+      ? `<span style="font-weight:700;color:#880e4f;font-size:10px">B2B</span>`
+      : `<span style="font-weight:700;color:#1a237e;font-size:10px">A2A</span>`;
+
+    // Key Factors — compact, truncated, tooltip shows full
+    const acts = ico.detectedActivities || [];
+    const kfText = acts.length > 0 ? acts.join('; ') : '';
+    const kfHtml = acts.length > 0
+      ? `<span style="font-size:10px;color:#555" title="${kfText}">${kfText.substring(0,28)}${kfText.length>28?'…':''}</span>`
+      : `<span style="color:#4caf50;font-size:10px">✓ Auto</span>`;
+
+    // Score — just the number, colored
+    const scoreHtml = `<span style="font-weight:700;color:${color};font-size:12px">${ico.score}</span>`;
+
+    // Effort
+    const effortHtml = ico.migrated
+      ? `<span style="color:#aaa;font-size:11px">—</span>`
+      : `<span class="effort-cell ${effortClass(ico.score)}" style="font-size:11px">${ico.effort.toFixed(1)}d</span>`;
+
+    // SAP Baseline — just avg
+    const sapHtml = ico.sapAvgDays
+      ? `<span style="font-size:10px;color:#666">${ico.sapAvgDays}d</span>`
+      : `<span style="color:#ccc;font-size:10px">—</span>`;
+
+    // Migrated
+    const migHtml = ico.migrated
+      ? `<span style="color:#1565c0;font-weight:700;font-size:10px">✓ Yes</span>`
+      : `<span style="color:#bbb;font-size:10px">No</span>`;
+
+    // Reuse — clickable if has reuse refs or new objects
+    const hasReuse   = ico.isReuse && (ico.reuseRefs||[]).length > 0;
+    const hasNewObjs = (ico.newObjects||[]).length > 0;
+    let reuseHtml;
+    if (hasReuse) {
+      reuseHtml = `<span class="badge badge-migrated reuse-clickable" style="font-size:10px;padding:2px 8px;cursor:pointer"
+                    onclick="event.stopPropagation();showReuseDetail(allICOs[${ico.seq-1}])"
+                    title="Click to see reuse references">♻ ${(ico.activitiesReused||[]).length}</span>`;
+    } else if (hasNewObjs) {
+      reuseHtml = `<span class="badge badge-auto reuse-clickable" style="font-size:10px;padding:2px 8px;cursor:pointer"
+                    onclick="event.stopPropagation();showReuseDetail(allICOs[${ico.seq-1}])"
+                    title="Click to see objects introduced here">★ ${(ico.newObjects||[]).length}</span>`;
+    } else {
+      reuseHtml = `<span style="color:#ccc;font-size:10px">—</span>`;
+    }
+
+    const row = document.createElement('tr');
+    row.dataset.search = [
+      ico.piObject, tabId === 'b2b' ? (ico._omContent||'') : '',
+      ico.senderSystem, ico.senderParty,
+      ico.receiverSystems.join(','), ico.allSenderTags, ico.allReceiverTags, ico.verdict
+    ].join(' ').toLowerCase();
+
+    // B2B tab: show Operation Mapping content; Total/A2A tabs: always show PI Object
+    const omLines  = (ico._omContent || '').split('\n').map(l => l.trim()).filter(Boolean);
+    const useOM    = tabId === 'b2b' && omLines.length > 0;
+    const piLabel  = useOM ? omLines.join(', ') : ico.piObject;
+    const piTitle  = useOM
+      ? `Operation Mapping: ${omLines.join(', ')}\n(PI Object: ${ico.piObject})`
+      : ico.piObject;
+
+    // Truncation titles for ellipsis cells
+    const sysTitle = ico.senderSystem || ico.senderParty || '';
+    const rtTitle  = ico.receiverTypes.join(', ');
+    const scTitle  = ico.scenarioType;
+
+    row.innerHTML = `
+      <td style="text-align:center;color:#888;font-size:10px">${ico.seq}</td>
+      <td style="font-size:10px" title="${ico.sapSystem}">${ico.sapSystem}</td>
+      <td style="font-weight:700;color:#1a237e;text-align:center;font-size:11px">${ico.icoNumber}</td>
+      <td style="font-size:10px;color:${useOM?'#7f4b0c':'inherit'}" title="${piTitle}">${piLabel}</td>
+      <td style="font-size:10px" title="${sysTitle}">${sysTitle || '—'}</td>
+      <td style="font-size:10px;text-align:center" title="${ico.senderTypes.join(', ')}">${ico.senderTypes.join(', ') || '—'}</td>
+      <td style="font-size:10px;text-align:center" title="${rtTitle}">${rtTitle || '—'}</td>
+      <td style="font-size:10px;text-align:center" title="${scTitle}">${scTitle}</td>
+      <td style="text-align:center">${b2bCell}</td>
+      <td class="verdict-cell-clickable" onclick="showICODetail(allICOs[${ico.seq-1}])" title="Click for full scenario details">
+        ${verdictBadge(ico.verdict)}
+      </td>
+      <td style="text-align:center">${scoreHtml}</td>
+      <td style="text-align:center">${effortHtml}</td>
+      <td style="text-align:center">${sapHtml}</td>
+      <td style="text-align:center">${migHtml}</td>
+      <td style="text-align:center">${reuseHtml}</td>
+      <td>${kfHtml}</td>
+    `;
+    tbody.appendChild(row);
+  }
+}
+
+// ─── Tab Switching ─────────────────────────────────────────────────────────────
+function switchTab(tabId, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-' + tabId).classList.add('active');
+}
+
+// ─── Search / Filter ──────────────────────────────────────────────────────────
+function filterTable(tabId, query) {
+  const filterIdMap = {total:'Total', a2a:'A2A', b2b:'B2B'};
+  const tblId = 'tbl' + filterIdMap[tabId];
+  const rows = document.querySelectorAll('#' + tblId + ' tbody tr');
+  const q = query.toLowerCase();
+  rows.forEach(row => {
+    row.style.display = (!q || (row.dataset.search || '').includes(q)) ? '' : 'none';
+  });
+}
+
+// ─── Excel Export ─────────────────────────────────────────────────────────────
+function icoToExcelRow(ico, seq) {
+  return {
+    '#': seq,
+    'SAP System': ico.sapSystem,
+    'ICO #': ico.icoNumber,
+    'PI Object (Scenario)': ico.piObject,
+    'Sender Party': ico.senderParty,
+    'Sender System': ico.senderSystem,
+    'Sender Type': ico.senderTypes.join(', '),
+    'Receiver System(s)': ico.receiverSystems.join(', '),
+    'Receiver Type(s)': ico.receiverTypes.join(', '),
+    'Scenario Type': ico.scenarioType,
+    'B2B?': ico.isB2B ? 'B2B' : 'A2A',
+    'Sender Tags': ico.senderTagChips.join(', '),
+    'Receiver Tags': ico.receiverTagChips.join(', '),
+    'FIGAF Verdict': ico.verdict,
+    'Score /100': ico.score,
+    'Effort (Days)': ico.effort,
+    'SAP Baseline (Days)': ico.sapAvgDays || '',
+    'SAP Assessment Category': ico.sapCategory || '',
+    'Migrated?': ico.migrated ? 'Yes' : 'No',
+    'Key Complexity Factors': ico.detectedActivities.join('; ')
+  };
+}
+
+// ─── Exact reference colors (from FIGAF_Migration_Assessment.xlsx) ───────────
+const C = {
+  NAVY:       'FF1F3864',  // dark navy — title bg, column header bg
+  NAVY_MED:   'FF2E74B5',  // medium blue — subtitle/section header bg
+  PURPLE_HDR: 'FF7030A0',  // B2B sheet header purple
+  BAND1:      'FFD9E1F2',  // row band 1 (blue-grey) — also Already Migrated
+  BAND2:      'FFE2EFDA',  // row band 2 (light green) — also Auto-Migrate
+  AMBER:      'FFFFEACC',  // Manual Steps row bg
+  PURPLE:     'FFEAD1FB',  // Complex row bg
+  REDLIGHT:   'FFFFD7D7',  // Needs Redesign row bg
+  WHITE:      'FFFFFFFF',
+  BLACK:      'FF000000',
+  NAVY_FG:    'FF1F3864',  // dark navy text (for band rows)
+  GREEN_FG:   'FF375623',  // dark green text
+  AMBER_FG:   'FF7F4B0C',  // dark amber text
+  PURPLE_FG:  'FF7030A0',  // purple text
+  RED_FG:     'FF7B0000',  // dark red text
+  BLUE_FG:    'FF2E74B5',  // medium blue text
+};
+
+// verdict → { bg, fg, bandFg }
+const VERDICT_STYLE = {
+  'Auto-Migrate':            { bg: C.BAND2,   fg: C.GREEN_FG  },
+  'Migrate + Manual Steps':  { bg: C.AMBER,   fg: C.AMBER_FG  },
+  'Complex':                 { bg: C.PURPLE,  fg: C.PURPLE_FG },
+  'Needs Redesign':          { bg: C.REDLIGHT,fg: C.RED_FG    },
+  'Already Migrated':        { bg: C.BAND1,   fg: C.BLUE_FG   },
+};
+// used in the old UI badge rendering — keep a separate map
+const VERDICT_STYLE_UI = {
+  'Auto-Migrate':            { bg: 'FFE8F5E9', fg: 'FF1B5E20' },
+  'Migrate + Manual Steps':  { bg: 'FFFFF8E1', fg: 'FFE65100' },
+  'Complex':                 { bg: 'FFF3E5F5', fg: 'FF4A148C' },
+  'Needs Redesign':          { bg: 'FFFFEBEE', fg: 'FFB71C1C' },
+  'Already Migrated':        { bg: 'FFE3F2FD', fg: 'FF0D47A1' },
+};
+const COL_WIDTHS = [5,12,7,52,18,18,16,30,18,16,7,28,28,22,10,12,16,22,10,38];
+const COL_HEADERS = ['#','SAP System','ICO #','PI Object (Scenario)','Sender Party','Sender System',
+  'Sender Type','Receiver System(s)','Receiver Type(s)','Scenario Type','B2B?',
+  'Sender Tags','Receiver Tags','FIGAF Verdict','Score /100','Effort (Days)',
+  'SAP Baseline (Days)','SAP Assessment Category','Migrated?','Key Complexity Factors'];
+
+// ─── Core style helpers ───────────────────────────────────────────────────────
+function s(cell, bg, fg, bold, sz, wrap, hAlign) {
+  cell.fill      = { type:'pattern', pattern:'solid', fgColor:{argb:bg} };
+  cell.font      = { bold:!!bold, color:{argb:fg||C.BLACK}, name:'Calibri', size:sz||9 };
+  cell.alignment = { vertical:'middle', horizontal:hAlign||'left', wrapText:!!wrap };
+}
+function applyStyle(cell, style) {
+  if (style.fill)      cell.fill      = style.fill;
+  if (style.font)      cell.font      = style.font;
+  if (style.alignment) cell.alignment = style.alignment;
+  if (style.border)    cell.border    = style.border;
+}
+
+async function buildStyledWorkbook(totalRows, a2aRows, b2bRows) {
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'FIGAF Migration Assessment Tool';
+  wb.created = new Date();
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  addSummarySheet(wb, totalRows, a2aRows, b2bRows, dateStr);
+  addAssessmentSheet(wb, totalRows, 'ICO Assessment Register', 'Full ICO Assessment Register', C.NAVY);
+  addAssessmentSheet(wb, a2aRows,   'A2A Assessment',          'A2A Integration Assessment',   C.NAVY);
+  addAssessmentSheet(wb, b2bRows,   'B2B Assessment',          'B2B Integration Assessment',   C.PURPLE_HDR);
+  addMethodologySheet(wb);
+  return wb;
+}
+
+function addSummarySheet(wb, totalRows, a2aRows, b2bRows, dateStr) {
+  // Exact column layout matching reference: A=35, B=14, C=16, D=10, E=18, F=20, G=12, H=14, I=10
+  const ws = wb.addWorksheet('Executive Summary');
+  ws.views = [{ showGridLines:false }];
+  ws.columns = [
+    {width:35},{width:14},{width:16},{width:10},
+    {width:18},{width:20},{width:12},{width:14},{width:10}
+  ];
+
+  const autoC = totalRows.filter(i=>i.verdict==='Auto-Migrate').length;
+  const manC  = totalRows.filter(i=>i.verdict==='Migrate + Manual Steps').length;
+  const cplC  = totalRows.filter(i=>i.verdict==='Complex'||i.verdict==='Needs Redesign').length;
+  const migC  = totalRows.filter(i=>i.migrated).length;
+  const totalEffort = totalRows.reduce((sum,i)=>sum+i.effort,0);
+  const avgScore = Math.round(totalRows.reduce((sum,i)=>sum+i.score,0) / (totalRows.length||1));
+
+  // Row 1 – main title  (A1:J1)
+  ws.mergeCells('A1:J1'); ws.getRow(1).height = 38.1;
+  const t1 = ws.getCell('A1');
+  t1.value = 'FIGAF PI/PO Migration Assessment Report';
+  s(t1, C.NAVY, C.WHITE, true, 20, true, 'left');
+
+  // Row 2 – source/date subtitle
+  ws.mergeCells('A2:J2'); ws.getRow(2).height = 20.1;
+  const t2 = ws.getCell('A2');
+  t2.value = `Assessed: ${dateStr}   |   Tool: Figaf PI Migration Analyzer`;
+  s(t2, C.NAVY_MED, C.WHITE, false, 10, true, 'left');
+
+
+  // Row 3 – small spacer
+  ws.getRow(3).height = 8.1;
+
+  // Rows 4–7: KPI block (big numbers + labels)
+  // Reference layout: cols A,C,E,G,I hold data; B,D,F,H are spacers
+  // Row 4: big numbers, Row 5-6: empty, Row 7: labels
+  const kpis = [
+    { col:'A', val:totalRows.length, label:'Total ICOs\nAnalysed',       bg:C.NAVY },
+    { col:'C', val:autoC,            label:'Auto-Migrate\n(FIGAF)',       bg:C.NAVY_MED.replace('2E74B5','375623') },  // FF375623 green
+    { col:'E', val:manC,             label:'Migrate +\nManual Steps',     bg:'FF7F4B0C' },
+    { col:'G', val:cplC,             label:'Complex /\nRedesign',         bg:'FF7B0000' },
+    { col:'I', val:migC,             label:'Already\nMigrated',           bg:C.NAVY_MED },
+  ];
+
+  ws.getRow(4).height = 21.9;
+  ws.getRow(5).height = 21.9;
+  ws.getRow(6).height = 21.9;
+  ws.getRow(7).height = 21.9;
+
+  kpis.forEach(({col, val, label, bg}) => {
+    const numCell = ws.getCell(`${col}4`);
+    numCell.value = val;
+    s(numCell, bg, C.WHITE, true, 30, false, 'center');
+
+    const lblCell = ws.getCell(`${col}7`);
+    lblCell.value = label;
+    s(lblCell, bg, C.WHITE, true, 9, true, 'center');
+  });
+
+  // Row 8 – spacer
+  ws.getRow(8).height = 8.1;
+
+  // Row 9 – section header "FIGAF Feasibility Breakdown"
+  ws.mergeCells('A9:J9'); ws.getRow(9).height = 20.1;
+  const secHdr = ws.getCell('A9');
+  secHdr.value = 'FIGAF Feasibility Breakdown';
+  s(secHdr, C.NAVY_MED, C.WHITE, true, 11, false, 'left');
+
+  // Row 10 – table headers
+  const tblHdrs = ['Verdict','ICO Count','% of Total','Avg Score','Total Effort (Days)','FIGAF Saves ~67% (Days)','Migrated','Not Migrated','B2B','A2A'];
+  ws.getRow(10).height = 30;
+  tblHdrs.forEach((h, i) => {
+    const cell = ws.getRow(10).getCell(i+1);
+    cell.value = h;
+    s(cell, C.NAVY, C.WHITE, true, 9, true, 'center');
+  });
+
+  // Verdict data rows (rows 11-15)
+  const vdata = [
+    { v:'Auto-Migrate',           bg:C.BAND2,    fg:C.GREEN_FG,  cnt:autoC, b2b:b2bICOs.filter(i=>i.verdict==='Auto-Migrate').length,   a2a:a2aICOs.filter(i=>i.verdict==='Auto-Migrate').length },
+    { v:'Migrate + Manual Steps', bg:C.AMBER,    fg:C.AMBER_FG,  cnt:manC,  b2b:b2bICOs.filter(i=>i.verdict==='Migrate + Manual Steps').length, a2a:a2aICOs.filter(i=>i.verdict==='Migrate + Manual Steps').length },
+    { v:'Complex / Needs Redesign',bg:C.PURPLE,  fg:C.PURPLE_FG, cnt:cplC,  b2b:b2bICOs.filter(i=>i.verdict==='Complex'||i.verdict==='Needs Redesign').length, a2a:a2aICOs.filter(i=>i.verdict==='Complex'||i.verdict==='Needs Redesign').length },
+    { v:'Already Migrated',       bg:C.BAND1,    fg:C.BLUE_FG,   cnt:migC,  b2b:b2bICOs.filter(i=>i.migrated).length, a2a:a2aICOs.filter(i=>i.migrated).length },
+  ];
+
+  vdata.forEach(({v, bg, fg, cnt, b2b, a2a}, ri) => {
+    const subset = totalRows.filter(i => {
+      if (v==='Already Migrated') return i.migrated;
+      if (v==='Complex / Needs Redesign') return i.verdict==='Complex'||i.verdict==='Needs Redesign';
+      return i.verdict===v;
+    });
+    const eff   = subset.reduce((sum,i)=>sum+i.effort,0);
+    const avgSc = cnt ? Math.round(subset.reduce((sum,i)=>sum+i.score,0)/cnt) : 0;
+    const saves = (cnt*8 - eff).toFixed(1); // rough SAP baseline vs figaf
+    const pct   = totalRows.length ? ((cnt/totalRows.length)*100).toFixed(1)+'%' : '0%';
+    const notMig= cnt - (b2b+a2a > cnt ? cnt : subset.filter(i=>i.migrated).length);
+    const migrated = subset.filter(i=>i.migrated).length;
+
+    const row = ws.addRow([v, cnt, pct, avgSc, eff.toFixed(1), saves, migrated, cnt-migrated, b2b, a2a]);
+    row.height = 18;
+    row.eachCell((cell, ci) => {
+      s(cell, bg, ci===1 ? fg : (fg===C.GREEN_FG ? C.NAVY_FG : fg),
+        ci===1, 9, false, ci===1?'left':'center');
+    });
+  });
+
+  // Row 16 – spacer
+  ws.addRow([]); ws.lastRow.height = 8.1;
+
+  // Row 17 – section header "Effort Summary"
+  ws.mergeCells(`A${ws.rowCount+1}:J${ws.rowCount+1}`);
+  ws.addRow([]); // will merge below
+  const effortHdrRow = ws.rowCount;
+  ws.mergeCells(`A${effortHdrRow}:J${effortHdrRow}`);
+  const efHdr = ws.getCell(`A${effortHdrRow}`);
+  efHdr.value = 'Effort Summary';
+  s(efHdr, C.NAVY_MED, C.WHITE, true, 11, false, 'left');
+  ws.getRow(effortHdrRow).height = 20.1;
+
+  // Effort summary data rows
+  const efHdrs2 = ws.addRow(['Verdict','ICO Count','% Total','Total Effort (Days)','Avg Effort/ICO (Days)','SAP Baseline (Days)']);
+  efHdrs2.height = 30;
+  efHdrs2.eachCell((cell,ci) => { if(ci<=6) s(cell, C.NAVY, C.WHITE, true, 9, true, 'center'); });
+
+  vdata.forEach(({v, bg, fg, cnt}) => {
+    const subset = totalRows.filter(i => {
+      if (v==='Already Migrated') return i.migrated;
+      if (v==='Complex / Needs Redesign') return i.verdict==='Complex'||i.verdict==='Needs Redesign';
+      return i.verdict===v;
+    });
+    const eff    = subset.reduce((sum,i)=>sum+i.effort,0);
+    const avgEff = cnt ? (eff/cnt).toFixed(1) : '0';
+    const sapBase= subset.reduce((sum,i)=>sum+(parseFloat(i.sapAvgDays)||eff/cnt||0.5),0).toFixed(1);
+    const pct    = totalRows.length ? ((cnt/totalRows.length)*100).toFixed(1)+'%' : '0%';
+    const row = ws.addRow([v, cnt, pct, eff.toFixed(1), avgEff, sapBase]);
+    row.height = 18;
+    row.eachCell((cell, ci) => {
+      s(cell, bg, ci===1 ? fg : (fg===C.GREEN_FG ? C.NAVY_FG : fg),
+        ci===1, 9, false, ci===1?'left':'center');
+    });
+  });
+}
+
+function addAssessmentSheet(wb, icoList, sheetName, longTitle, hdrColor) {
+  const autoC = icoList.filter(i=>i.verdict==='Auto-Migrate').length;
+  const manC  = icoList.filter(i=>i.verdict==='Migrate + Manual Steps').length;
+  const cplC  = icoList.filter(i=>i.verdict==='Complex'||i.verdict==='Needs Redesign').length;
+  const migC  = icoList.filter(i=>i.migrated).length;
+  const totalE= icoList.reduce((sum,i)=>sum+i.effort,0);
+  const NC    = icoList.length;
+
+  const ws = wb.addWorksheet(sheetName);
+  // Freeze at row 4 (after title, legend, headers) — reference uses A4
+  ws.views = [{ state:'frozen', ySplit:3, showGridLines:true }];
+
+  // ── Row 1: Title bar ────────────────────────────────────────────────────────
+  ws.mergeCells(1, 1, 1, COL_HEADERS.length);
+  ws.getRow(1).height = 26.1;
+  const t1 = ws.getRow(1).getCell(1);
+  t1.value = `${longTitle}  –  ${NC} Unique ICOs`;
+  s(t1, hdrColor, C.WHITE, true, 16, true, 'left');
+
+  // ── Row 2: Colour legend / stats bar ──────────────────────────────────────
+  ws.mergeCells(2, 1, 2, COL_HEADERS.length);
+  ws.getRow(2).height = 15.9;
+  const t2 = ws.getRow(2).getCell(1);
+  t2.value = `Colour: Green = Auto-Migrate  |  Amber = Manual Steps  |  Purple = Complex  |  Red = Needs Redesign  |  Blue = Already Migrated`;
+  s(t2, C.NAVY_MED, C.WHITE, false, 9, true, 'left');
+
+
+  // ── Row 3: Column headers ─────────────────────────────────────────────────
+  const hdrRow = ws.addRow(COL_HEADERS);
+  hdrRow.height = 32.1;
+  COL_HEADERS.forEach((_, i) => {
+    const c = hdrRow.getCell(i+1);
+    s(c, hdrColor, C.WHITE, true, 9, true, 'center');
+  });
+
+  // ── Data rows ─────────────────────────────────────────────────────────────
+  // Reference uses alternating BAND1/BAND2 for auto-migrate, specific colors for others
+  // Band tracks current band for auto-migrate rows
+  let bandFlip = false;
+
+  icoList.forEach((ico, idx) => {
+    const r  = icoToExcelRow(ico, idx+1);
+    const vals = COL_HEADERS.map(h => r[h] ?? '');
+    const dataRow = ws.addRow(vals);
+    dataRow.height = 14.1;
+
+    // Row background based on verdict — matching reference exactly
+    let rowBg, rowFg;
+    if (ico.verdict === 'Migrate + Manual Steps') {
+      rowBg = C.AMBER; rowFg = C.AMBER_FG;
+    } else if (ico.verdict === 'Complex' || ico.verdict === 'Needs Redesign') {
+      rowBg = C.PURPLE; rowFg = C.PURPLE_FG;
+    } else if (ico.migrated && ico.verdict !== 'Auto-Migrate') {
+      rowBg = C.BAND1; rowFg = C.NAVY_FG;
+    } else {
+      // Auto-Migrate: alternate between BAND1 and BAND2 in pairs (reference uses ~16-row blocks,
+      // but alternating per row gives the same visual banding and is simpler)
+      bandFlip = !bandFlip;
+      rowBg = bandFlip ? C.BAND1 : C.BAND2;
+      rowFg = C.NAVY_FG;
+    }
+
+    COL_HEADERS.forEach((hdr, ci) => {
+      const cell = dataRow.getCell(ci+1);
+      const isCenter = ['#','ICO #','Score /100','Effort (Days)','SAP Baseline (Days)','B2B?','Migrated?','Scenario Type'].includes(hdr);
+      s(cell, rowBg, rowFg, true, 8, true, isCenter ? 'center' : 'left');
+    });
+  });
+
+  // ── Column widths — match reference exactly ───────────────────────────────
+  // Reference: A=5, B=10, C=8, D=55, E=18, F=14, G=16, H=16, I=7, J=22, K=8, L=10, M=10, N=55
+  ws.columns = [
+    {width:5},{width:10},{width:8},{width:55},{width:18},{width:14},
+    {width:16},{width:22},{width:16},{width:7},{width:7},{width:22},
+    {width:22},{width:22},{width:8},{width:10},{width:14},{width:18},{width:10},{width:55}
+  ];
+
+  // ── Auto-filter on row 3 ───────────────────────────────────────────────────
+  ws.autoFilter = { from:{row:3,column:1}, to:{row:3,column:COL_HEADERS.length} };
+}
+
+function addMethodologySheet(wb) {
+  // Reference: cols A=38, B=22, C=12, D=32, E=55
+  const ws = wb.addWorksheet('Scoring Methodology');
+  ws.views = [{ showGridLines:true }];
+  ws.columns = [{width:38},{width:22},{width:12},{width:32},{width:55}];
+
+  const mergeTitle = (text, bgColor, rowH) => {
+    const rn = ws.rowCount + 1;
+    ws.mergeCells(`A${rn}:I${rn}`);
+    const r = ws.addRow([]); r.height = rowH || 26.1;
+    const c = ws.getCell(`A${rn}`);
+    c.value = text;
+    s(c, bgColor, C.WHITE, true, rn===1?16:11, false, 'left');
+  };
+
+  const addSectionHdr = (text) => {
+    const rn = ws.rowCount + 1;
+    ws.mergeCells(`A${rn}:I${rn}`);
+    const r = ws.addRow([]); r.height = 20.1;
+    const c = ws.getCell(`A${rn}`);
+    c.value = text;
+    s(c, C.NAVY_MED, C.WHITE, true, 11, false, 'left');
+  };
+
+  const addColHdr = (vals) => {
+    const r = ws.addRow(vals); r.height = 30;
+    vals.forEach((_,i) => {
+      const c = r.getCell(i+1);
+      s(c, C.NAVY, C.WHITE, true, 9, true, 'center');
+    });
+  };
+
+  // Row 1 – main title
+  ws.getRow(1).height = 26.1;
+  ws.mergeCells('A1:I1');
+  ws.addRow([]);
+  const t1 = ws.getCell('A1');
+  t1.value = 'FIGAF Feasibility Scoring — Methodology & Legend';
+  s(t1, C.NAVY, C.WHITE, true, 16, false, 'left');
+
+  // Row 2 – spacer
+  ws.getRow(2).height = 8.1;
+
+  // Verdict Categories section
+  addSectionHdr('Verdict Categories');
+  addColHdr(['Verdict','Score Range','Colour','What It Means','Typical ICO Characteristics']);
+
+  const verdictRows = [
+    { v:'Auto-Migrate',           bg:C.BAND2,    fg:C.GREEN_FG,  score:'80 – 100', col:'Green',
+      what:'FIGAF migrates end-to-end with no manual steps',
+      typical:'Standard adapters, graphical/XSLT mappings, no custom modules or lookups' },
+    { v:'Migrate + Manual Steps', bg:C.AMBER,    fg:C.AMBER_FG,  score:'55 – 79',  col:'Amber',
+      what:'FIGAF migrates core; dev completes specific follow-up tasks',
+      typical:'Java mappings (Groovy stub), REST JSON conversion, B2B/EDI mapping, adapter modules' },
+    { v:'Complex',                bg:C.PURPLE,   fg:C.PURPLE_FG, score:'30 – 54',  col:'Purple',
+      what:'Multiple manual activities; specialist involvement required',
+      typical:'nwBPM, ABAP mapping, multiple complex factors combined' },
+    { v:'Needs Redesign',         bg:C.REDLIGHT, fg:C.RED_FG,    score:'< 30',     col:'Red',
+      what:'Architecture change required; cannot be directly migrated',
+      typical:'Combination of many complex factors, deprecated features' },
+    { v:'Already Migrated',       bg:C.BAND1,    fg:C.BLUE_FG,   score:'—',        col:'Blue',
+      what:'ICO has already been migrated to SAP CPI',
+      typical:'Migration completed by Figaf or manually' },
+  ];
+  verdictRows.forEach(({v, bg, fg, score, col, what, typical}) => {
+    const r = ws.addRow([v, score, col, what, typical]);
+    r.height = 21.9;
+    r.eachCell((cell, ci) => {
+      s(cell, bg, ci===1 ? fg : C.BLACK, ci===1, 9, true, ci===1?'left':'left');
+    });
+  });
+
+  // Spacer
+  ws.addRow([]); ws.lastRow.height = 8.1;
+
+  // Scoring Rules section
+  addSectionHdr('FIGAF Assessment Input Rules (per rule effort cost — see Additional Effort column)');
+  addColHdr(['Rule','Category','Detection Method','Additional Effort','Notes']);
+
+  const ruleRows = [
+    ['XSLT Mapping',                    'AUTO',    'Tags contain "XSLT_OM"',                                                  '0 days',    'Auto Migration — no manual steps needed'],
+    ['Mapping with Context/Queue Fns',  'AUTO',    'Tags contain "ContextFunctions" or "SingleValue"',                        '0 days',    'Auto Migration'],
+    ['Mapping with Large/Complex Bricks','AUTO',   'Tags contain "MM300Elements", "MM25Nodes", or "MMwith"',                  '0 days',    'Auto Migration'],
+    ['Dynamic Configuration',           'AUTO',    'Sender/Receiver Modules contains "DynamicConfigurationBean"',            '0 days',    'Figaf converts to Properties automatically'],
+    ['B2B Mapping',                     'AUTO',    'Sender/Receiver Tags contain "B2B_Mapping"',                             '0 days',    'MIGs created as one-time activity — no extra effort charged'],
+    ['JAVA Mapping',                    'MANUAL',  'Tags contain "JAVA_OM"',                                                  `+${(1*BASE_EFFORT).toFixed(2)} days (1× base)`, 'Developer must manually verify implementation is as expected'],
+    ['EDI Separator',                   'MANUAL',  'Sender or Receiver adapter type = EDISeparator',                         `+${(1*BASE_EFFORT).toFixed(2)} days (1× base)`, 'TPM setup requires manual activity'],
+    ['REST with JSON Conversion',       'MANUAL',  'Tags contain "RESTwithJSON" (sender or receiver)',                        `+${(1*BASE_EFFORT).toFixed(2)} days (1× base)`, 'Manual configuration changes required'],
+    ['Adapter Module',                  'ONE-TIME','Non-standard custom module bean in Sender/Receiver Modules',             'See One-Time Activities tab',                   'Groovy development tracked as one-time effort — not charged per ICO'],
+    ['nwBPM',                           'REDESIGN','Sender BPM or Receiver BPM column is not empty',                         `+${(4*BASE_EFFORT).toFixed(2)} days (4× base)`, 'Migration not possible — requires full redesign'],
+    ['ABAP Mapping',                    'REDESIGN','Tags contain "ABAP"',                                                     `+${(2*BASE_EFFORT).toFixed(2)} days (2× base)`, 'Migration not possible — requires architectural redesign'],
+  ];
+  ruleRows.forEach((row, idx) => {
+    const r = ws.addRow(row); r.height = 18;
+    const bg = idx%2===0 ? C.BAND2 : C.BAND1;
+    r.eachCell((cell, ci) => {
+      s(cell, bg, C.NAVY_FG, ci===1, 9, true, 'left');
+    });
+  });
+
+  // Spacer
+  ws.addRow([]); ws.lastRow.height = 8.1;
+
+  // Scoring formula section
+  addSectionHdr('Scoring Formula');
+  const formulaRows = [
+    ['Score',              '= 100 − (MANUAL rules × 10) − (REDESIGN rules × 25)',           'Minimum score: 0','',''],
+    ['Effort',             `= ${BASE_EFFORT} days (base, configurable) + sum of per-rule effort costs (see table above)`,`e.g. nwBPM alone = ${BASE_EFFORT} + 2.0 = ${BASE_EFFORT+2.0}d`,'',''],
+    ['B2B Classification', 'ICO tagged as B2B if any Sender Tag or Receiver Tag contains the text "b2b" (case-insensitive)','','',''],
+  ];
+  ws.mergeCells(`A${ws.rowCount+1}:I${ws.rowCount+formulaRows.length}`);
+  formulaRows.forEach((row, idx) => {
+    const r = ws.addRow(row); r.height = 18;
+    r.eachCell((cell, ci) => {
+      s(cell, idx%2===0?C.BAND2:C.BAND1, C.NAVY_FG, ci===1, 9, true, 'left');
+    });
+  });
+}
+
+// ─── Pure client-side Excel download (no Python/server required) ─────────────
+async function buildTabWorkbook(tab) {
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'FIGAF Migration Assessment Tool';
+  wb.created = new Date();
+  const dateStr = new Date().toLocaleDateString('en-US', { month:'long', year:'numeric' });
+
+  const incAll = tab === 'full' || tab === 'total';
+  const incA2A = tab === 'full' || tab === 'a2a';
+  const incB2B = tab === 'full' || tab === 'b2b';
+
+  // Summary always included when generating full or total
+  if (incAll) addSummarySheet(wb, allICOs, a2aICOs, b2bICOs, dateStr);
+  if (incAll) addAssessmentSheet(wb, allICOs, 'ICO Assessment Register', 'Full ICO Assessment Register', C.NAVY);
+  if (incA2A) addAssessmentSheet(wb, a2aICOs, 'A2A Assessment', 'A2A Integration Assessment', C.NAVY);
+  if (incB2B) addAssessmentSheet(wb, b2bICOs, 'B2B Assessment', 'B2B Integration Assessment', C.PURPLE_HDR);
+  if (tab === 'full') addMethodologySheet(wb);
+
+  // For single-tab downloads that skipped the summary, add a mini summary
+  if (!incAll) {
+    const icoList = tab === 'a2a' ? a2aICOs : b2bICOs;
+    addSummarySheet(wb, icoList, tab === 'a2a' ? icoList : [], tab === 'b2b' ? icoList : [], dateStr);
+  }
+  return wb;
+}
+
+async function downloadViaClient(tab) {
+  if (!allICOs.length) {
+    alert('Please load and process files first.');
+    return;
+  }
+  const btnId = tab === 'full' ? 'fullReportBtn' : `dlBtn_${tab}`;
+  const btn = document.getElementById(btnId);
+  const origText = btn.innerHTML;
+  btn.innerHTML = '⏳ Generating…'; btn.disabled = true;
+
+  try {
+    const wb  = await buildTabWorkbook(tab);
+    const buf = await wb.xlsx.writeBuffer();
+    saveBuffer(buf, `FIGAF_Migration_Assessment_${tab.toUpperCase()}_${yyyymmdd()}.xlsx`);
+  } catch(e) {
+    alert('Download failed: ' + e.message);
+    console.error(e);
+  } finally {
+    btn.innerHTML = origText; btn.disabled = false;
+  }
+}
+
+async function downloadTab(tabId)    { await downloadViaClient(tabId); }
+async function downloadFullReport()  { await downloadViaClient('full'); }
+
+function downloadOnetimeJSON() {
+  if (!oneTimeConnections.length) { alert('No data — please run the assessment first.'); return; }
+
+  const sections = { connections: [], migs: [], modules: [] };
+
+  for (const c of oneTimeConnections) {
+    const included = !onetimeIgnored.has(onetimeRowKey(c));
+    const base = {
+      included,
+      label:       c.label,
+      adapterType: c.adapterType,
+      tier:        c.tier,
+      note:        c.note,
+      effortDays:  parseFloat(c.effort.toFixed(2)),
+      direction:   c.direction,
+      icoCount:    c.totalICOs,
+      icos: c.allIcos.map(i => ({
+        seq:       i.seq,
+        icoNumber: i.icoNumber,
+        sapSystem: i.sapSystem,
+        piObject:  i.piObject,
+        verdict:   i.verdict,
+        isB2B:     i.isB2B
+      }))
+    };
+
+    if (c._isMIG) {
+      sections.migs.push({
+        ...base,
+        migName:          c.system,
+        originalMappings: c.originalMappings || []
+      });
+    } else if (c._isModule) {
+      sections.modules.push({
+        ...base,
+        moduleName: c.system
+      });
+    } else {
+      sections.connections.push({
+        ...base,
+        endpoints: c.endpointList || []
+      });
+    }
+  }
+
+  const activeConns   = sections.connections.filter(c => c.included);
+  const activeMIGs    = sections.migs.filter(c => c.included);
+  const activeMods    = sections.modules.filter(c => c.included);
+  const activeEffort  = [...activeConns, ...activeMIGs, ...activeMods]
+                          .reduce((s,c) => s + c.effortDays, 0);
+
+  const out = {
+    exportedAt:     new Date().toISOString(),
+    baseEffortDays: BASE_EFFORT,
+    summary: {
+      totalItems:        oneTimeConnections.length,
+      includedItems:     oneTimeConnections.length - onetimeIgnored.size,
+      excludedItems:     onetimeIgnored.size,
+      includedEffortDays: parseFloat(activeEffort.toFixed(2)),
+      connections:       { total: sections.connections.length, included: activeConns.length },
+      b2bMIGs:           { total: sections.migs.length,        included: activeMIGs.length },
+      adapterModules:    { total: sections.modules.length,     included: activeMods.length }
+    },
+    connections:    sections.connections,
+    b2bMIGs:        sections.migs,
+    adapterModules: sections.modules
+  };
+
+  const json = JSON.stringify(out, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `FIGAF_OneTimeActivities_${yyyymmdd()}.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function saveBuffer(buf, filename) {
+  const blob = new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function yyyymmdd() {
+  const d = new Date();
+  return d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0');
+}
+
+// ─── Detail Modal ─────────────────────────────────────────────────────────────
+const RULE_META = {
+  // AUTO rules (0 extra effort)
+  'XSLT Mapping':                      { cat:'AUTO',     icon:'🤖', note:'Auto Migration',                                                          cost:'0d' },
+  'Mapping – Context/Queue Functions': { cat:'AUTO',     icon:'🤖', note:'Auto Migration',                                                          cost:'0d' },
+  'Mapping – Large/Complex Bricks':    { cat:'AUTO',     icon:'🤖', note:'Auto Migration',                                                          cost:'0d' },
+  'Dynamic Configuration':             { cat:'AUTO',     icon:'🤖', note:'Auto Migration — Figaf converts to Properties',                           cost:'0d' },
+  // MANUAL rules (variable effort)
+  'B2B Mapping':                       { cat:'AUTO',     icon:'🤖', note:'Migration possible — MIGs created as one-time activity (no extra effort)', cost:'0d' },
+  'JAVA Mapping':                      { cat:'MANUAL',   icon:'⚠️',  note:'Migration possible — developer must manually verify implementation'      },
+  'EDI Separator':                     { cat:'MANUAL',   icon:'⚠️',  note:'Migration possible — TPM setup needs manual activity'                    },
+  'REST with JSON Conversion':         { cat:'MANUAL',   icon:'⚠️',  note:'Migration possible — manual configuration changes required'              },
+  'Adapter Module':                    { cat:'AUTO',     icon:'🔧',  note:'Custom Groovy module — development effort tracked in One-Time Activities' },
+  // REDESIGN rules
+  'nwBPM':                             { cat:'REDESIGN', icon:'🔴', note:'Migration NOT possible — requires redesign'                               },
+  'ABAP Mapping':                      { cat:'REDESIGN', icon:'🔴', note:'Migration NOT possible — requires architectural redesign'                 },
+};
+
+function verdictModalClass(verdict) {
+  return { 'Auto-Migrate':'mv-auto', 'Migrate + Manual Steps':'mv-manual',
+           'Complex':'mv-complex', 'Needs Redesign':'mv-redesign',
+           'Already Migrated':'mv-migrated' }[verdict] || 'mv-auto';
+}
+
+function showICODetail(ico) {
+  const m = document.getElementById('icoModal');
+
+  // Header
+  document.getElementById('md-ico-name').textContent =
+    `ICO #${ico.icoNumber} — ${ico.sapSystem}`;
+  document.getElementById('md-ico-obj').textContent = ico.piObject;
+
+  // Verdict badge
+  const vb = document.getElementById('md-verdict-badge');
+  vb.textContent = ico.verdict;
+  vb.className = 'modal-verdict-badge ' + verdictModalClass(ico.verdict);
+
+  // KPIs
+  document.getElementById('md-score').textContent = ico.score;
+  const effortEl = document.getElementById('md-effort');
+  effortEl.textContent = ico.migrated ? '—' : ico.effort.toFixed(1) + 'd';
+  effortEl.parentElement.className = 'modal-kpi' + (ico.migrated ? '' : ico.effort > 0.5 ? ' amber' : ' green');
+
+  const sapEl = document.getElementById('md-sap');
+  sapEl.textContent = ico.sapAvgDays ? ico.sapAvgDays + 'd' : '—';
+
+  const savEl = document.getElementById('md-savings');
+  const sav = ico.sapAvgDays ? (ico.sapAvgDays - ico.effort) : null;
+  savEl.textContent = sav !== null ? sav.toFixed(1) + 'd' : '—';
+  savEl.parentElement.className = 'modal-kpi sav';
+
+  // Scenario info grid
+  const fields = [
+    ['Sender System',    ico.senderSystem || ico.senderParty || '—'],
+    ['Sender Type(s)',   ico.senderTypes.join(', ') || '—'],
+    ['Receiver System(s)', ico.receiverSystems.join(', ') || '—'],
+    ['Receiver Type(s)', ico.receiverTypes.join(', ') || '—'],
+    ['Scenario Type',    ico.scenarioType || '—'],
+    ['Classification',   (ico.isB2B ? '🤝 B2B' : '🔗 A2A') + (ico.migrated ? ' · ✓ Already Migrated' : '')],
+    ['SAP Category',     ico.sapCategory || '—'],
+    ['SAP Baseline',     ico.sapAvgDays ? `Avg: ${ico.sapAvgDays}d  |  Min: ${ico.sapMinDays}d  |  Max: ${ico.sapMaxDays}d` : '—'],
+  ];
+  const grid = document.getElementById('md-scenario-grid');
+  grid.innerHTML = fields.map(([lbl, val]) =>
+    `<div class="modal-field"><div class="lbl">${lbl}</div><div class="val">${val}</div></div>`
+  ).join('');
+
+  // Tags
+  const allTags = [...ico.senderTagChips, ...ico.receiverTagChips];
+  const tagsEl = document.getElementById('md-tags');
+  if (allTags.length) {
+    tagsEl.innerHTML = allTags.map(t =>
+      `<span class="tag-item ${t.toLowerCase().includes('b2b') ? 'b2b' : ''}">${t}</span>`
+    ).join('');
+    document.getElementById('md-tags-section').style.display = '';
+  } else {
+    document.getElementById('md-tags-section').style.display = 'none';
+  }
+
+  // ── Operation Mappings section (B2B Mapping or EDISeparator) ────────────────
+  const allActsCheck = ico.activitiesAll || ico.detectedActivities || [];
+  const showOM = allActsCheck.includes('B2B Mapping') ||
+                 (ico.senderTypes||[]).some(t => t.toLowerCase().includes('ediseparator')) ||
+                 (ico.receiverTypes||[]).some(t => t.toLowerCase().includes('ediseparator'));
+
+  const omSection = document.getElementById('md-om-section');
+  const omList    = document.getElementById('md-om-list');
+  const flWrap    = document.getElementById('md-fl-wrap');
+  const flList    = document.getElementById('md-fl-list');
+
+  if (showOM) {
+    // Operation Mappings
+    const omLines = (ico._omContent || '').split('\n').map(l => l.trim()).filter(Boolean);
+    if (omLines.length) {
+      omList.innerHTML = omLines.map(name =>
+        `<li><span class="om-icon">🗺️</span><span class="om-name">${name}</span></li>`
+      ).join('');
+    } else {
+      omList.innerHTML = `<li style="background:none;border:none"><span class="om-empty">No Operation Mapping content found in Figaf report</span></li>`;
+    }
+
+    // Function Libraries (relevant for B2B)
+    const flLines = [...new Set((ico._fl || '').split('\n').map(l => l.trim()).filter(Boolean))];
+    if (flLines.length) {
+      flList.innerHTML = flLines.map(name =>
+        `<li class="om-fl"><span class="om-icon">📚</span><span class="om-name">${name}</span></li>`
+      ).join('');
+      flWrap.style.display = '';
+    } else {
+      flWrap.style.display = 'none';
+    }
+    omSection.style.display = '';
+  } else {
+    omSection.style.display = 'none';
+  }
+
+  // Activity breakdown
+  const allActs   = ico.activitiesAll   || ico.detectedActivities || [];
+  // chargedActs = activities still charged (MANUAL/REDESIGN only after reuse deduction)
+  const chargedActs  = (ico.detectedActivities || []).filter(a => RULE_META[a]?.cat !== 'AUTO');
+  const reusedActs   = ico.activitiesReused || [];
+  // autoActs: from allActs, deduplicated against already-shown charged/reused
+  const shownSet     = new Set([...chargedActs, ...reusedActs]);
+  const autoActs     = allActs.filter(a => (RULE_META[a]?.cat || 'AUTO') === 'AUTO' && !shownSet.has(a));
+  // deduplicate autoActs
+  const uniqueAutoActs = [...new Set(autoActs)];
+
+  const actList = document.getElementById('md-activity-list');
+  if (!allActs.length) {
+    actList.innerHTML = `<li><span class="act-icon">✅</span>
+      <div><div class="act-name">No activities detected</div>
+      <div class="act-note">Pure Auto-Migrate — ${BASE_EFFORT}d base effort only</div></div>
+      <span class="act-cost auto">0d</span></li>`;
+  } else {
+    const rows = [];
+
+    // Helper: render unique custom module name chips for Adapter Module
+    function adapterModuleChips() {
+      const uniqueMods = [...new Set(ico.customModuleNames || [])];
+      if (!uniqueMods.length) return '';
+      const chips = uniqueMods.map(mod =>
+        `<span style="display:inline-flex;align-items:center;gap:4px;background:#fff8e1;border:1px solid #ffe082;border-radius:4px;padding:2px 7px;font-size:10px;margin:2px 2px 0 0">
+          <span>🔧</span>
+          <span style="font-weight:600;color:#7f4b0c" title="${mod}">${mod}</span>
+        </span>`
+      ).join('');
+      return `<div style="margin-top:5px;line-height:1.8">${chips}</div>`;
+    }
+
+    // 1. MANUAL / REDESIGN activities — charged
+    for (const act of chargedActs) {
+      const m = RULE_META[act] || { cat:'MANUAL', icon:'⚠️', note:'Manual activity' };
+      const cls = m.cat.toLowerCase();
+      const mult = RULE_EFFORT[act] || 1;
+      const costLabel = `+${(mult * BASE_EFFORT).toFixed(2)}d`;
+      const extraHtml = act === 'Adapter Module' ? adapterModuleChips() : '';
+      rows.push(`<li>
+        <span class="act-icon">${m.icon}</span>
+        <div><div class="act-name">${act}</div><div class="act-note">${m.note}</div>${extraHtml}</div>
+        <span class="act-cost ${cls}">${costLabel}</span>
+      </li>`);
+    }
+
+    // 2. Reused activities (MANUAL/REDESIGN but covered by earlier ICO)
+    for (const act of reusedActs) {
+      const m = RULE_META[act] || { icon:'♻️', note:'Object already migrated in a previous ICO' };
+      const extraHtml = act === 'Adapter Module' ? adapterModuleChips() : '';
+      rows.push(`<li>
+        <span class="act-icon">♻️</span>
+        <div><div class="act-name">${act} <span style="font-weight:400;color:#1565c0">(Reused — no extra effort)</span></div>
+        <div class="act-note">${m.note}</div>${extraHtml}</div>
+        <span class="act-cost reused">0d</span>
+      </li>`);
+    }
+
+    // 3. AUTO activities (detected, zero cost — informational only)
+    for (const act of uniqueAutoActs) {
+      const m = RULE_META[act] || { icon:'🤖', note:'Auto Migration' };
+      rows.push(`<li style="opacity:0.75">
+        <span class="act-icon">🤖</span>
+        <div><div class="act-name">${act} <span style="font-weight:400;color:#888">(Auto — no action needed)</span></div>
+        <div class="act-note">${m.note}</div></div>
+        <span class="act-cost auto">0d</span>
+      </li>`);
+    }
+
+    if (!rows.length) {
+      rows.push(`<li><span class="act-icon">✅</span>
+        <div><div class="act-name">No chargeable activities</div>
+        <div class="act-note">All detected activities are Auto-Migrate</div></div>
+        <span class="act-cost auto">0d</span></li>`);
+    }
+
+    actList.innerHTML = rows.join('');
+  }
+
+  // Effort breakdown line
+  const effortBreakEl = document.getElementById('md-effort-breakdown');
+  if (ico.migrated) {
+    effortBreakEl.textContent = 'Already Migrated — no effort required';
+  } else {
+    const parts = [`${BASE_EFFORT}d (base)`];
+    for (const act of chargedActs) {
+      const mult = RULE_EFFORT[act];
+      if (mult) parts.push(`${act}: +${(mult * BASE_EFFORT).toFixed(2)}d`);
+    }
+    if (reusedActs.length) parts.push(`${reusedActs.length} reused → 0d`);
+    effortBreakEl.textContent = parts.join('  +  ') + `  =  ${ico.effort.toFixed(1)}d`;
+  }
+
+  // Reuse references
+  const reuseSection = document.getElementById('md-reuse-section');
+  const refsEl = document.getElementById('md-reuse-refs');
+  const refs = ico.reuseRefs || [];
+  if (refs.length) {
+    const seen = {};
+    refs.forEach(r => {
+      const key = r.firstSeq;
+      if (!seen[key]) seen[key] = { seq: r.firstSeq, pi: r.firstPi, items: [] };
+      const obj = r.okey.split(':').slice(1).join(':').split('|')[0].trim();
+      seen[key].items.push(`${r.rule}: ${obj.substring(0,40)}`);
+    });
+    refsEl.innerHTML = Object.values(seen).map(s =>
+      `<div class="reuse-ref-item">
+        <div class="rr-ico">↗ First use: ICO #${s.seq}</div>
+        <div class="rr-obj">${s.pi.substring(0,60)}</div>
+        <div class="rr-obj" style="margin-top:2px">${s.items.slice(0,3).join(' · ')}</div>
+       </div>`
+    ).join('');
+    reuseSection.style.display = '';
+  } else {
+    reuseSection.style.display = 'none';
+  }
+
+  m.classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('icoModal').classList.remove('open');
+}
+
+// ─── Reuse Detail Popup ────────────────────────────────────────────────────────
+function showReuseDetail(ico) {
+  const pm = document.getElementById('reusePopup');
+  const refs     = ico.reuseRefs  || [];
+  const newObjs  = ico.newObjects || [];
+
+  // Header
+  document.getElementById('rp-title').textContent =
+    `ICO #${ico.seq}  —  ${ico.isReuse ? 'Reused Objects' : 'First-Use Objects'}`;
+  document.getElementById('rp-subtitle').textContent = ico.piObject;
+
+  const body = document.getElementById('rp-body');
+  let html = '';
+
+  // ── Section A: Reused objects (with link to original ICO) ────────────────
+  if (refs.length > 0) {
+    // Group by first-ICO seq
+    const grouped = {};
+    refs.forEach(r => {
+      if (!grouped[r.firstSeq]) grouped[r.firstSeq] = { pi: r.firstPi, seq: r.firstSeq, items: [] };
+      const objName = r.okey.split(':').slice(1).join(':').split('|')[0].trim();
+      grouped[r.firstSeq].items.push({ rule: r.rule, obj: objName });
+    });
+
+    html += `<div class="rp-section-title">♻️ Reused from previous ICOs</div>
+     <p class="rp-note">These objects were already migrated in earlier ICOs. No extra effort charged.</p>`;
+
+    Object.values(grouped).forEach(g => {
+      const origICO = allICOs[g.seq - 1];
+      // Group items by rule
+      const byRule = {};
+      g.items.forEach(({rule, obj}) => {
+        if (!byRule[rule]) byRule[rule] = [];
+        byRule[rule].push(obj);
+      });
+
+      html += `<div class="rp-ref-card">
+        <div class="rp-ref-header">
+          <span class="rp-ref-ico">📌 ICO #${g.seq}</span>
+          <span class="rp-ref-pi" title="${g.pi}">${g.pi.length > 55 ? g.pi.substring(0,55)+'…' : g.pi}</span>
+          <button class="rp-ref-open" onclick="closeReusePopup();showICODetail(allICOs[${g.seq-1}])">
+            Open ICO Detail →
+          </button>
+        </div>
+        <div class="rp-ref-objects">
+          ${Object.entries(byRule).map(([rule, objs]) => `
+            <div class="rp-obj-row">
+              <span class="rp-obj-rule">${rule}</span>
+              ${objs.map(o => `<span class="rp-obj-name" title="${o}">${o.length>40?o.substring(0,40)+'…':o}</span>`).join('')}
+            </div>`).join('')}
+        </div>
+      </div>`;
+    });
+  }
+
+  // ── Section B: New objects introduced here ───────────────────────────────
+  if (newObjs.length > 0) {
+    const byRule = {};
+    newObjs.forEach(({rule, okey}) => {
+      const objName = okey.split(':').slice(1).join(':').split('|')[0].trim();
+      if (!byRule[rule]) byRule[rule] = [];
+      byRule[rule].push(objName);
+    });
+
+    html += `<div class="rp-section-title" style="margin-top:${refs.length?'16px':'0'}">★ Objects introduced here (first use)</div>
+     <p class="rp-note">This ICO is the first to use these objects. Subsequent ICOs that share them will get a reuse discount.</p>
+     <div class="rp-new-card">
+       ${Object.entries(byRule).map(([rule, objs]) => `
+         <div class="rp-obj-row">
+           <span class="rp-obj-rule">${rule}</span>
+           ${objs.map(o => `<span class="rp-obj-name" title="${o}">${o.length>40?o.substring(0,40)+'…':o}</span>`).join('')}
+         </div>`).join('')}
+     </div>`;
+  }
+
+  if (!refs.length && !newObjs.length) {
+    html = `<p class="rp-note" style="text-align:center;padding:20px">No reuse information for this ICO.</p>`;
+  }
+
+  body.innerHTML = html;
+  pm.classList.add('open');
+}
+
+function closeReusePopup() {
+  document.getElementById('reusePopup').classList.remove('open');
+}
+
+// Close on overlay / Escape
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeModal(); closeReusePopup(); }
+});
+</script>
+
+<!-- ── Reuse Popup ───────────────────────────────────────────────────────── -->
+<div class="rp-overlay" id="reusePopup" onclick="if(event.target===this)closeReusePopup()">
+  <div class="rp-box">
+    <div class="rp-header">
+      <div>
+        <h3 id="rp-title">Reuse Detail</h3>
+        <p id="rp-subtitle"></p>
+      </div>
+      <button class="rp-close" onclick="closeReusePopup()">✕</button>
+    </div>
+    <div class="rp-body" id="rp-body"></div>
+  </div>
+</div>
+
+<!-- ── Detail Modal ──────────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="icoModal" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <h2 id="md-ico-name">ICO Detail</h2>
+        <p id="md-ico-obj"></p>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Verdict + KPIs -->
+      <div class="modal-verdict-bar">
+        <span class="modal-verdict-badge mv-auto" id="md-verdict-badge">—</span>
+        <div class="modal-kpis">
+          <div class="modal-kpi">
+            <div class="kv" id="md-score">—</div><div class="kl">Score /100</div>
+          </div>
+          <div class="modal-kpi amber">
+            <div class="kv" id="md-effort">—</div><div class="kl">FIGAF Effort</div>
+          </div>
+          <div class="modal-kpi">
+            <div class="kv" id="md-sap">—</div><div class="kl">SAP Baseline</div>
+          </div>
+          <div class="modal-kpi sav">
+            <div class="kv" id="md-savings">—</div><div class="kl">Savings vs SAP</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Effort formula -->
+      <div style="font-size:11px;color:#666;margin:8px 0;padding:7px 10px;background:#f9f9f9;border-radius:6px;font-family:monospace" id="md-effort-breakdown"></div>
+
+      <!-- Scenario info -->
+      <div class="modal-section">
+        <div class="modal-section-title">📋 Scenario Information</div>
+        <div class="modal-grid" id="md-scenario-grid"></div>
+      </div>
+
+      <!-- Tags -->
+      <div class="modal-section" id="md-tags-section">
+        <div class="modal-section-title">🏷️ Tags</div>
+        <div class="tag-list" id="md-tags"></div>
+      </div>
+
+      <!-- Operation Mappings (B2B / EDI scenarios) -->
+      <div class="modal-section" id="md-om-section" style="display:none">
+        <div class="modal-section-title">🗺️ Operation Mappings <span style="font-weight:400;font-size:10px;color:#888">(used for B2B migration)</span></div>
+        <ul class="om-list" id="md-om-list"></ul>
+        <div id="md-fl-wrap" style="display:none;margin-top:8px">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:#7f4b0c;margin-bottom:4px">Function Libraries</div>
+          <ul class="om-list" id="md-fl-list"></ul>
+        </div>
+      </div>
+
+      <!-- Activities -->
+      <div class="modal-section">
+        <div class="modal-section-title">⚙️ Activity Assessment</div>
+        <ul class="activity-list" id="md-activity-list"></ul>
+      </div>
+
+      <!-- Reuse references -->
+      <div class="modal-section" id="md-reuse-section">
+        <div class="modal-section-title">♻️ Reuse References</div>
+        <div class="reuse-ref-list" id="md-reuse-refs"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div style="margin:32px auto 16px;max-width:1400px;padding:0 32px">
+  <div style="border-top:1px solid #e0e0e0;padding-top:12px;color:#aaa;font-size:10.5px;line-height:1.7;text-align:center">
+    <strong style="color:#bbb">Disclaimer:</strong>
+    This assessment is done with the available information that is extracted from the Figaf tool and the tags created by the user.
+    It is not 100% accurate as we cannot know the hidden things.
+    It can be considered as an accelerator for the Migration Project.
+  </div>
+</div>
+
+</body>
+</html>
