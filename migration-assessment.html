@@ -427,6 +427,20 @@
   .ot-kpi.amber .ov { color:#f57f17; }
   .ot-kpi.red    { background:#fff3e0; border-color:#ffcc80; }
   .ot-kpi.red .ov { color:#e65100; }
+  .ot-effort-chip {
+    display:flex; flex-direction:column; align-items:center; gap:3px;
+    background:#fff; border:1px solid #c5cae9; border-radius:8px;
+    padding:6px 10px; min-width:90px; position:relative;
+  }
+  .ot-effort-chip label { font-size:10px; font-weight:700; color:#1a237e; text-align:center; white-space:nowrap; }
+  .ot-effort-chip input[type=number] {
+    width:62px; text-align:center; font-size:13px; font-weight:700; color:#333;
+    border:1px solid #e0e0e0; border-radius:5px; padding:3px 4px;
+  }
+  .ot-effort-chip input[type=number]:focus { border-color:#1a237e; outline:none; }
+  .ot-effort-chip .chip-tier { font-size:8px; color:#aaa; margin-top:1px; }
+  .ot-effort-chip.modified { border-color:#f57f17; background:#fffde7; }
+  .ot-effort-chip.modified label { color:#e65100; }
 
   .conn-table { width:100%; border-collapse:collapse; font-size:11px; table-layout:fixed; }
   .conn-table col.ct-seq   { width:32px; }
@@ -677,13 +691,31 @@
 
       <!-- ONE-TIME ACTIVITIES TAB -->
       <div class="tab-content" id="tab-onetime">
-        <div class="tab-toolbar">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:10px">
           <div class="tab-summary" id="summaryOnetime"></div>
-          <input type="text" class="search-input" placeholder="🔍 Search adapter / system…" oninput="filterOnetimeTable(this.value)">
-          <button class="btn btn-download" onclick="downloadOnetimeJSON()" title="Download selected items as JSON migration plan"
-            style="white-space:nowrap;padding:6px 14px;font-size:12px">
-            ⬇️ Download JSON
-          </button>
+          <div style="display:flex;gap:8px;flex-shrink:0">
+            <button onclick="downloadOnetimeJSON()" title="Download all items as JSON"
+              style="padding:6px 13px;font-size:12px;font-weight:600;background:#1a237e;color:#fff;border:1px solid #1a237e;border-radius:7px;cursor:pointer;white-space:nowrap">
+              ⬇️ Download JSON
+            </button>
+            <label title="Re-upload a previously downloaded JSON to restore configuration"
+              style="padding:6px 13px;font-size:12px;font-weight:600;background:#1a237e;color:#fff;border:1px solid #1a237e;border-radius:7px;cursor:pointer;white-space:nowrap;display:flex;align-items:center;margin:0">
+              📂 Load Config
+              <input type="file" id="onetimeConfigFile" accept=".json" style="display:none"
+                onchange="loadOnetimeConfig(this)">
+            </label>
+          </div>
+        </div>
+        <!-- Effort Editor -->
+        <div id="otEffortEditor" style="display:none;margin-bottom:12px;background:#f8f9ff;border:1px solid #c5cae9;border-radius:10px;padding:14px 16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <span style="font-size:12px;font-weight:700;color:#1a237e;letter-spacing:0.3px">⚙️ Adapter Type Setup Effort (days) — edit and recalculate</span>
+            <div style="display:flex;gap:8px">
+              <button onclick="resetEffortDefaults()" style="font-size:11px;padding:4px 10px;border:1px solid #9fa8da;border-radius:5px;background:#fff;color:#1a237e;cursor:pointer">↺ Reset Defaults</button>
+              <button onclick="recalculateEfforts()" style="font-size:11px;padding:4px 12px;border:none;border-radius:5px;background:#1a237e;color:#fff;cursor:pointer;font-weight:600">▶ Recalculate</button>
+            </div>
+          </div>
+          <div id="otEffortGrid" style="display:flex;flex-wrap:wrap;gap:8px"></div>
         </div>
         <!-- KPI Banner -->
         <div class="ot-banner" id="otBanner"></div>
@@ -917,7 +949,7 @@ function getConnMeta(adapterType) {
   for (const [k, v] of Object.entries(CONN_META)) {
     if (key.startsWith(k) || k.startsWith(key)) return v;
   }
-  return { effort:0.5, label:adapterType||'Unknown', note:'Connection configuration required', tier:'Standard' };
+  return { effort:1.0, label:adapterType||'Unknown', note:'Connection configuration required', tier:'Standard' };
 }
 
 // ─── Derive unique MIG name from Operation Mapping name ───────────────────────
@@ -1654,6 +1686,130 @@ function renderSummary(tabId, icos) {
     `Total Effort: <strong>${totalEffort.toFixed(1)} days</strong>`;
 }
 
+// ─── Adapter Effort Editor ────────────────────────────────────────────────────
+// Stores user-overridden efforts keyed by adapterType (lowercase)
+let effortOverrides = {}; // { 'rfc': 0.2, 'jdbc': 0.5, ... }
+
+function buildEffortEditor() {
+  // Collect unique adapter types from loaded connections (exclude MIGs and modules)
+  const types = {};
+  for (const c of oneTimeConnections) {
+    if (c._isMIG || c._isModule) continue;
+    const key = (c.adapterType || '').toLowerCase();
+    if (!key || types[key]) continue;
+    types[key] = {
+      label:   c.label || c.adapterType,
+      tier:    c.tier  || 'Standard',
+      default: CONN_META[key] ? CONN_META[key].effort : c.effort
+    };
+  }
+
+  // Also add MIG and Module as editable rows
+  const hasMIGs    = oneTimeConnections.some(c => c._isMIG);
+  const hasModules = oneTimeConnections.some(c => c._isModule);
+
+  const grid = document.getElementById('otEffortGrid');
+  if (!grid) return;
+
+  const TIER_COLOR = { B2B:'#bf360c', Heavy:'#5d4037', Standard:'#f57f17', Light:'#2e7d32', MIG:'#7f4b0c', Module:'#6a1b9a' };
+
+  let html = '';
+
+  // Group by tier order
+  const tierOrder = ['B2B','Heavy','Standard','Light'];
+  for (const tier of tierOrder) {
+    const tierTypes = Object.entries(types).filter(([,v]) => v.tier === tier);
+    if (!tierTypes.length) continue;
+    tierTypes.sort((a,b) => a[1].label.localeCompare(b[1].label));
+    for (const [key, meta] of tierTypes) {
+      const current = effortOverrides[key] !== undefined ? effortOverrides[key] : meta.default;
+      const modified = effortOverrides[key] !== undefined && effortOverrides[key] !== meta.default;
+      html += `<div class="ot-effort-chip${modified?' modified':''}" id="chip_${key}">
+        <label title="${meta.label} (${tier})">${meta.label}</label>
+        <input type="number" id="eff_${key}" value="${current}" min="0" step="0.05"
+          data-key="${key}" data-default="${meta.default}"
+          oninput="markChipModified('${key}')">
+        <span class="chip-tier" style="color:${TIER_COLOR[tier]||'#888'}">${tier}</span>
+      </div>`;
+    }
+  }
+
+  // MIG row
+  if (hasMIGs) {
+    const migDefault = oneTimeConnections.find(c => c._isMIG)?.effort ?? 0.1;
+    const current = effortOverrides['__mig__'] !== undefined ? effortOverrides['__mig__'] : migDefault;
+    const modified = effortOverrides['__mig__'] !== undefined;
+    html += `<div class="ot-effort-chip${modified?' modified':''}" id="chip___mig__">
+      <label title="B2B MIG creation effort each">📋 B2B MIG</label>
+      <input type="number" id="eff___mig__" value="${current}" min="0" step="0.05"
+        data-key="__mig__" data-default="${migDefault}"
+        oninput="markChipModified('__mig__')">
+      <span class="chip-tier" style="color:${TIER_COLOR['MIG']}">MIG</span>
+    </div>`;
+  }
+
+  // Module row
+  if (hasModules) {
+    const modDefault = 2 * BASE_EFFORT;
+    const current = effortOverrides['__module__'] !== undefined ? effortOverrides['__module__'] : modDefault;
+    const modified = effortOverrides['__module__'] !== undefined;
+    html += `<div class="ot-effort-chip${modified?' modified':''}" id="chip___module__">
+      <label title="Adapter module development effort each">🔧 Adapter Module</label>
+      <input type="number" id="eff___module__" value="${current}" min="0" step="0.05"
+        data-key="__module__" data-default="${modDefault}"
+        oninput="markChipModified('__module__')">
+      <span class="chip-tier" style="color:${TIER_COLOR['Module']}">Module</span>
+    </div>`;
+  }
+
+  grid.innerHTML = html;
+  document.getElementById('otEffortEditor').style.display = '';
+}
+
+function markChipModified(key) {
+  const input = document.getElementById(`eff_${key}`);
+  const chip  = document.getElementById(`chip_${key}`);
+  if (!input || !chip) return;
+  const defaultVal = parseFloat(input.dataset.default);
+  const newVal     = parseFloat(input.value);
+  chip.classList.toggle('modified', !isNaN(newVal) && newVal !== defaultVal);
+}
+
+function resetEffortDefaults() {
+  effortOverrides = {};
+  document.querySelectorAll('#otEffortGrid input[type=number]').forEach(inp => {
+    inp.value = inp.dataset.default;
+    const chip = document.getElementById(`chip_${inp.dataset.key}`);
+    if (chip) chip.classList.remove('modified');
+  });
+  recalculateEfforts();
+}
+
+function recalculateEfforts() {
+  // Read current values from inputs
+  document.querySelectorAll('#otEffortGrid input[type=number]').forEach(inp => {
+    const key = inp.dataset.key;
+    const val = parseFloat(inp.value);
+    if (!isNaN(val) && val >= 0) effortOverrides[key] = val;
+  });
+
+  // Apply overrides to oneTimeConnections
+  for (const c of oneTimeConnections) {
+    if (c._isMIG) {
+      if (effortOverrides['__mig__'] !== undefined) c.effort = effortOverrides['__mig__'];
+    } else if (c._isModule) {
+      if (effortOverrides['__module__'] !== undefined) c.effort = effortOverrides['__module__'];
+    } else {
+      const key = (c.adapterType || '').toLowerCase();
+      if (effortOverrides[key] !== undefined) c.effort = effortOverrides[key];
+    }
+  }
+
+  // Re-render table and KPIs (keep selections)
+  renderOnetimeRows(oneTimeConnections);
+  updateOnetimeKPIs();
+}
+
 function onetimeRowKey(c) {
   return c._isMIG ? `mig|${c.system}` : c._isModule ? `mod|${c.system}` : `conn|${c.adapterType}`;
 }
@@ -1727,7 +1883,8 @@ function updateOnetimeKPIs() {
 }
 
 function renderOneTimeTab() {
-  onetimeIgnored.clear(); // reset on fresh render
+  onetimeIgnored.clear();   // reset on fresh render
+  effortOverrides = {};     // reset effort overrides on fresh render
   const conns = oneTimeConnections;
   const totalEffort = conns.reduce((s,c) => s + c.effort, 0);
   const totalICOsBenefiting = new Set(conns.flatMap(c => c.allIcos.map(i => i.seq))).size;
@@ -1773,6 +1930,7 @@ function renderOneTimeTab() {
 
   document.getElementById('cntOnetime').textContent = conns.length;
   renderOnetimeRows(conns);
+  buildEffortEditor();
 }
 
 function renderOnetimeRows(allConns) {
@@ -2562,6 +2720,91 @@ async function downloadViaClient(tab) {
 async function downloadTab(tabId)    { await downloadViaClient(tabId); }
 async function downloadFullReport()  { await downloadViaClient('full'); }
 
+// ─── One-Time Config Load (from Download JSON) ───────────────────────────────
+function loadOnetimeConfig(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.summary || (!data.connections && !data.b2bMIGs && !data.adapterModules))
+        throw new Error('Not a valid One-Time Activities JSON file');
+
+      if (!oneTimeConnections.length) {
+        alert('Please run the assessment first, then load the config to apply it.');
+        input.value = '';
+        return;
+      }
+
+      // Build effort overrides from the saved effortDays per item
+      effortOverrides = {};
+      const allItems = [
+        ...(data.connections   || []),
+        ...(data.b2bMIGs       || []),
+        ...(data.adapterModules|| [])
+      ];
+
+      for (const item of allItems) {
+        if (item._isMIG || item.adapterType === 'B2B MIG') {
+          effortOverrides['__mig__'] = item.effortDays;
+        } else if (item._isModule || item.adapterType === 'Adapter Module') {
+          effortOverrides['__module__'] = item.effortDays;
+        } else {
+          const key = (item.adapterType || '').toLowerCase();
+          if (key) effortOverrides[key] = item.effortDays;
+        }
+      }
+
+      // Build excluded keys from included:false items
+      onetimeIgnored.clear();
+      for (const item of allItems) {
+        if (item.included === false) {
+          // Derive the row key to match onetimeRowKey()
+          let key;
+          if (item.adapterType === 'B2B MIG' || item.migName)
+            key = `mig|${item.migName || item.label}`;
+          else if (item.adapterType === 'Adapter Module' || item.moduleName)
+            key = `mod|${item.moduleName || item.label}`;
+          else
+            key = `conn|${item.adapterType}`;
+          onetimeIgnored.add(key);
+        }
+      }
+
+      // Apply effort overrides to live connections and re-render
+      recalculateEfforts();
+      buildEffortEditor();
+
+      // Restore checkbox states
+      document.querySelectorAll('#tblOnetimeBody input[type=checkbox]').forEach(cb => {
+        const ignored = onetimeIgnored.has(cb.dataset.key);
+        cb.checked = !ignored;
+        const row = cb.closest('tr');
+        if (row) {
+          row.style.opacity        = ignored ? '0.35' : '';
+          row.style.textDecoration = ignored ? 'line-through' : '';
+        }
+      });
+
+      // Sync select-all checkbox
+      const allBoxes = [...document.querySelectorAll('#tblOnetimeBody input[type=checkbox]')];
+      const selectAll = document.getElementById('onetimeSelectAll');
+      if (selectAll) {
+        selectAll.checked       = allBoxes.every(b => b.checked);
+        selectAll.indeterminate = !selectAll.checked && allBoxes.some(b => b.checked);
+      }
+
+      const exportedAt = data.exportedAt ? ` (exported ${new Date(data.exportedAt).toLocaleString()})` : '';
+      alert(`✅ Configuration restored${exportedAt}\n${Object.keys(effortOverrides).length} effort values, ${onetimeIgnored.size} excluded items applied.`);
+    } catch(err) {
+      alert('❌ Failed to load: ' + err.message);
+    }
+    input.value = '';
+  };
+  reader.readAsText(file);
+}
+
 function downloadOnetimeJSON() {
   if (!oneTimeConnections.length) { alert('No data — please run the assessment first.'); return; }
 
@@ -3078,7 +3321,8 @@ document.addEventListener('keydown', e => {
     <strong style="color:#bbb">Disclaimer:</strong>
     This assessment is done with the available information that is extracted from the Figaf tool and the tags created by the user.
     It is not 100% accurate as we cannot know the hidden things.
-    It can be considered as an accelerator for the Migration Project.
+    It can be considered as an input for your Migration Project and you are only responsible for it.
+    Figaf holds no liability for any issues arising herefrom.
   </div>
 </div>
 
