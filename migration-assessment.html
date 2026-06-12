@@ -538,6 +538,13 @@
     </div>
   </div>
 
+  <!-- Assessment Rules status (auto-loaded silently from assessment-rules.csv) -->
+  <div id="rulesStatusBar" style="font-size:11px;color:#888;margin-bottom:16px;padding:6px 12px;
+       background:#f5f5f5;border-radius:6px;display:flex;align-items:center;gap:8px">
+    <span>📋</span>
+    <span id="rulesStatus">⏳ Loading assessment rules…</span>
+  </div>
+
   <div style="display:flex;align-items:center;gap:12px;padding:10px 0 4px;flex-wrap:wrap">
     <label style="font-size:12px;font-weight:600;color:#444;white-space:nowrap">
       ⚙️ Base migration effort per ICO:
@@ -696,7 +703,7 @@
           <div style="display:flex;gap:8px;flex-shrink:0">
             <button onclick="downloadOnetimeJSON()" title="Download all items as JSON"
               style="padding:6px 13px;font-size:12px;font-weight:600;background:#1a237e;color:#fff;border:1px solid #1a237e;border-radius:7px;cursor:pointer;white-space:nowrap">
-              ⬇️ Download JSON
+              ⬇️ Download Config
             </button>
             <label title="Re-upload a previously downloaded JSON to restore configuration"
               style="padding:6px 13px;font-size:12px;font-weight:600;background:#1a237e;color:#fff;border:1px solid #1a237e;border-radius:7px;cursor:pointer;white-space:nowrap;display:flex;align-items:center;margin:0">
@@ -856,61 +863,175 @@ function updateBaseEffortLabel(val) {
   document.getElementById('baseEffortHint').textContent = `(= ${hours}h at 8h/day)`;
 }
 
-// ─── FIGAF Assessment Input Rules (from FIGAF Assessment Input.txt) ──────────
-// AUTO     → detected/shown, 0 extra effort, 0 score impact
-// MANUAL   → +1× BASE_EFFORT each, -10 score each  (migration possible with manual steps)
-// REDESIGN → +2-4× BASE_EFFORT each, -25 score each, forces Needs Redesign verdict
+// ─── FIGAF Assessment Input Rules ─────────────────────────────────────────────
+// Rules are driven by assessment-rules.csv when loaded via the UI.
+// If no CSV is loaded the built-in defaults below are used automatically.
+//
+// CSV controls: Category (AUTO/MANUAL/REDESIGN), Effort Multiplier, Notes.
+// Check functions are always defined in JS (they require runtime data access).
 //
 // `effort` is stored as a MULTIPLIER of BASE_EFFORT (not absolute days).
-// e.g. effort:1 = 1× BASE_EFFORT, effort:2 = 2× BASE_EFFORT, etc.
-// This means all costs scale proportionally when the user changes the base effort input.
+// e.g. effort:1 = 1× BASE_EFFORT, effort:4 = 4× BASE_EFFORT
 
-const RULES_AUTO = [
-  { name: 'B2B Mapping',
-    check: (ico) => hasTag(ico.allSenderTags,'b2b_mapping') || hasTag(ico.allReceiverTags,'b2b_mapping'),
-    note: 'Migration possible — MIGs created as one-time activity (no extra effort)', effort: 0 },
-  { name: 'XSLT Mapping',
-    check: (ico) => hasTag(ico.allSenderTags,'xslt_om') || hasTag(ico.allReceiverTags,'xslt_om'),
-    note: 'Auto Migration', effort: 0 },
-  { name: 'Mapping – Context/Queue Functions',
-    check: (ico) => hasTag(ico.allReceiverTags,'contextfunctions') || hasTag(ico.allReceiverTags,'singlevalue'),
-    note: 'Auto Migration', effort: 0 },
-  { name: 'Mapping – Large/Complex Bricks',
-    check: (ico) => hasTag(ico.allReceiverTags,'mm300') || hasTag(ico.allReceiverTags,'mm25nodes') || hasTag(ico.allReceiverTags,'mmwith'),
-    note: 'Auto Migration', effort: 0 },
-  { name: 'Dynamic Configuration',
-    check: (ico) => ico.hasDynamicConfig,
-    note: 'Auto Migration — Figaf converts to Properties', effort: 0 },
-  { name: 'Adapter Module',
-    check: (ico) => ico.hasCustomModule,
-    note: 'Custom Groovy module required — development effort tracked in One-Time Activities', effort: 0 },
-];
+// ── Master Registry — all known rules with their JS check functions ────────────
+const RULE_REGISTRY = {
+  'B2B Mapping': {
+    check: ico => hasTag(ico.allSenderTags,'b2b_mapping') || hasTag(ico.allReceiverTags,'b2b_mapping'),
+    defaultCat: 'AUTO', defaultEffort: 0,
+    defaultNote: 'Migration possible — MIGs created as one-time activity (no extra effort)'
+  },
+  'XSLT Mapping': {
+    check: ico => hasTag(ico.allSenderTags,'xslt_om') || hasTag(ico.allReceiverTags,'xslt_om'),
+    defaultCat: 'AUTO', defaultEffort: 0,
+    defaultNote: 'Auto Migration'
+  },
+  'Mapping – Context/Queue Functions': {
+    check: ico => hasTag(ico.allReceiverTags,'contextfunctions') || hasTag(ico.allReceiverTags,'singlevalue'),
+    defaultCat: 'AUTO', defaultEffort: 0,
+    defaultNote: 'Auto Migration'
+  },
+  'Mapping – Large/Complex Bricks': {
+    check: ico => hasTag(ico.allReceiverTags,'mm300') || hasTag(ico.allReceiverTags,'mm25nodes') || hasTag(ico.allReceiverTags,'mmwith'),
+    defaultCat: 'AUTO', defaultEffort: 0,
+    defaultNote: 'Auto Migration'
+  },
+  'Dynamic Configuration': {
+    check: ico => ico.hasDynamicConfig,
+    defaultCat: 'AUTO', defaultEffort: 0,
+    defaultNote: 'Auto Migration — Figaf converts to Properties'
+  },
+  'Adapter Module': {
+    check: ico => ico.hasCustomModule,
+    defaultCat: 'AUTO', defaultEffort: 0,
+    defaultNote: 'Custom Groovy module required — development effort tracked in One-Time Activities'
+  },
+  'JAVA Mapping': {
+    check: ico => hasTag(ico.allSenderTags,'java_om') || hasTag(ico.allReceiverTags,'java_om'),
+    defaultCat: 'MANUAL', defaultEffort: 1,
+    defaultNote: 'Migration possible — developer must manually verify implementation'
+  },
+  'EDI Separator': {
+    check: ico => ico.senderTypes.some(t => t.toLowerCase().includes('ediseparator')) ||
+                  ico.receiverTypes.some(t => t.toLowerCase().includes('ediseparator')),
+    defaultCat: 'MANUAL', defaultEffort: 1,
+    defaultNote: 'Migration possible — TPM setup needs manual activity'
+  },
+  'REST with JSON Conversion': {
+    check: ico => hasTag(ico.allSenderTags,'restwithjson') || hasTag(ico.allReceiverTags,'restwithjson'),
+    defaultCat: 'MANUAL', defaultEffort: 1,
+    defaultNote: 'Migration possible — manual configuration changes required'
+  },
+  'nwBPM': {
+    check: ico => ico.hasBPM,
+    defaultCat: 'REDESIGN', defaultEffort: 4,
+    defaultNote: 'Migration NOT possible — requires redesign (~4× base effort)'
+  },
+  'ABAP Mapping': {
+    check: ico => hasTag(ico.allSenderTags,'abap') || hasTag(ico.allReceiverTags,'abap'),
+    defaultCat: 'REDESIGN', defaultEffort: 2,
+    defaultNote: 'Migration NOT possible — requires architectural redesign'
+  },
+};
 
-const RULES_MANUAL = [
-  { name: 'JAVA Mapping',
-    check: (ico) => hasTag(ico.allSenderTags,'java_om') || hasTag(ico.allReceiverTags,'java_om'),
-    note: 'Migration possible — developer must manually verify implementation', effort: 1 },
-  { name: 'EDI Separator',
-    check: (ico) => ico.senderTypes.some(t => t.toLowerCase().includes('ediseparator')) ||
-                    ico.receiverTypes.some(t => t.toLowerCase().includes('ediseparator')),
-    note: 'Migration possible — TPM setup needs manual activity', effort: 1 },
-  { name: 'REST with JSON Conversion',
-    check: (ico) => hasTag(ico.allSenderTags,'restwithjson') || hasTag(ico.allReceiverTags,'restwithjson'),
-    note: 'Migration possible — manual configuration changes required', effort: 1 },
-];
+// ── Active rule arrays — populated from CSV or defaults ────────────────────────
+let RULES_AUTO     = [];
+let RULES_MANUAL   = [];
+let RULES_REDESIGN = [];
+let RULE_EFFORT    = {};  // name → effort multiplier
+let rulesSource    = 'built-in';  // 'built-in' | 'csv:<filename>'
 
-const RULES_REDESIGN = [
-  { name: 'nwBPM',
-    check: (ico) => ico.hasBPM,
-    note: 'Migration NOT possible — requires redesign (~4× base effort)', effort: 4 },
-  { name: 'ABAP Mapping',
-    check: (ico) => hasTag(ico.allSenderTags,'abap') || hasTag(ico.allReceiverTags,'abap'),
-    note: 'Migration NOT possible — requires architectural redesign', effort: 2 },
-];
+function rebuildRuleHelpers() {
+  RULE_EFFORT = {};
+  [...RULES_MANUAL, ...RULES_REDESIGN].forEach(r => { RULE_EFFORT[r.name] = r.effort; });
+  MANUAL_NAMES    = new Set(RULES_MANUAL.map(r => r.name));
+  REDESIGN_NAMES  = new Set(RULES_REDESIGN.map(r => r.name));
+  MANUAL_RULES    = [...RULES_AUTO, ...RULES_MANUAL, ...RULES_REDESIGN];
+}
 
-// Per-rule effort lookup: multiplier × BASE_EFFORT = extra days for that rule
-const RULE_EFFORT = {};
-[...RULES_MANUAL, ...RULES_REDESIGN].forEach(r => { RULE_EFFORT[r.name] = r.effort; });
+function initDefaultRules() {
+  RULES_AUTO = []; RULES_MANUAL = []; RULES_REDESIGN = [];
+  for (const [name, reg] of Object.entries(RULE_REGISTRY)) {
+    const r = { name, check: reg.check, note: reg.defaultNote, effort: reg.defaultEffort };
+    if      (reg.defaultCat === 'AUTO')     RULES_AUTO.push(r);
+    else if (reg.defaultCat === 'MANUAL')   RULES_MANUAL.push(r);
+    else if (reg.defaultCat === 'REDESIGN') RULES_REDESIGN.push(r);
+  }
+  rulesSource = 'built-in';
+  rebuildRuleHelpers();
+}
+
+// ── CSV rule parser ────────────────────────────────────────────────────────────
+function parseCSVLine(line) {
+  const result = []; let cur = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') { if (inQ && line[i+1] === '"') { cur += '"'; i++; } else inQ = !inQ; }
+    else if (c === ',' && !inQ) { result.push(cur.trim()); cur = ''; }
+    else cur += c;
+  }
+  result.push(cur.trim());
+  return result;
+}
+
+function parseAssessmentRulesCSV(text) {
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  if (lines.length < 2) return { rows: [], error: 'CSV has no data rows' };
+
+  const header = parseCSVLine(lines[0]);
+  const idx = {
+    cat:    header.findIndex(h => /category/i.test(h)),
+    name:   header.findIndex(h => /rule.?name/i.test(h)),
+    effort: header.findIndex(h => /effort.?mult/i.test(h)),
+    notes:  header.findIndex(h => /notes?$/i.test(h))
+  };
+  if (idx.cat === -1 || idx.name === -1)
+    return { rows: [], error: 'Missing required columns: Category and/or Rule Name' };
+
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cols  = parseCSVLine(lines[i]);
+    const cat   = (cols[idx.cat]  || '').toUpperCase().trim();
+    const name  = (cols[idx.name] || '').trim();
+    if (!name || cat === 'ONE-TIME') continue;  // skip header-style or one-time rows
+
+    const effortRaw = idx.effort >= 0 ? (cols[idx.effort] || '0') : '0';
+    const effortMatch = effortRaw.match(/(\d+(\.\d+)?)/);
+    const effort = effortMatch ? parseFloat(effortMatch[1]) : 0;
+    const note   = idx.notes >= 0 ? (cols[idx.notes] || '') : '';
+
+    rows.push({ name, cat, effort, note });
+  }
+  return { rows };
+}
+
+function applyCSVRules(rows, filename) {
+  RULES_AUTO = []; RULES_MANUAL = []; RULES_REDESIGN = [];
+  const recognized = [], unrecognized = [];
+
+  for (const row of rows) {
+    const reg = RULE_REGISTRY[row.name];
+    if (!reg) { unrecognized.push(row.name); continue; }
+    recognized.push(row.name);
+    const r = {
+      name:   row.name,
+      check:  reg.check,
+      note:   row.note || reg.defaultNote,
+      effort: isNaN(row.effort) ? reg.defaultEffort : row.effort
+    };
+    if      (row.cat === 'AUTO')     RULES_AUTO.push(r);
+    else if (row.cat === 'MANUAL')   RULES_MANUAL.push(r);
+    else if (row.cat === 'REDESIGN') RULES_REDESIGN.push(r);
+    else {
+      // Unknown category → use the registry default
+      if      (reg.defaultCat === 'AUTO')     RULES_AUTO.push(r);
+      else if (reg.defaultCat === 'MANUAL')   RULES_MANUAL.push(r);
+      else if (reg.defaultCat === 'REDESIGN') RULES_REDESIGN.push(r);
+    }
+  }
+  rulesSource = `csv:${filename}`;
+  rebuildRuleHelpers();
+  return { recognized, unrecognized };
+}
 
 // ─── One-Time Connection Setup — effort by adapter type ───────────────────────
 // Key = lowercase adapter type (or prefix match); value = { effort, label, note, tier }
@@ -1118,9 +1239,14 @@ function computeOneTimeConnections() {
   return [...connections, ...migs, ...modules];
 }
 
-const MANUAL_RULES = [...RULES_AUTO, ...RULES_MANUAL, ...RULES_REDESIGN];  // kept for legacy compat
-const MANUAL_NAMES   = new Set(RULES_MANUAL.map(r => r.name));
-const REDESIGN_NAMES = new Set(RULES_REDESIGN.map(r => r.name));
+// Populated by rebuildRuleHelpers() — do not assign directly
+let MANUAL_RULES   = [];
+let MANUAL_NAMES   = new Set();
+let REDESIGN_NAMES = new Set();
+
+// Initialise rules from built-in defaults on first load
+initDefaultRules();
+
 
 function hasTag(tagStr, keyword) {
   if (!tagStr) return false;
@@ -1302,8 +1428,54 @@ function checkEnableProcess() {
   document.getElementById('processBtn').disabled = !(sapData && figafData);
 }
 
+// ─── Rules status renderer ────────────────────────────────────────────────────
+function renderRulesStatus(source, unrecognized) {
+  const statusEl = document.getElementById('rulesStatus');
+  if (!statusEl) return;
+  const autoC = RULES_AUTO.length, manC = RULES_MANUAL.length, redC = RULES_REDESIGN.length;
+  const total = autoC + manC + redC;
+
+  if (source === 'built-in') {
+    statusEl.innerHTML = `<span style="color:#f57f17">⚠ assessment-rules.csv not found — using built-in defaults
+      (${total} rules: ${manC} manual · ${redC} redesign · ${autoC} auto)</span>`;
+  } else {
+    let html = `<span style="color:#2e7d32">✓ Rules loaded from <strong>assessment-rules.csv</strong>
+      — ${total} rules active (${manC} manual · ${redC} redesign · ${autoC} auto)</span>`;
+    if (unrecognized && unrecognized.length) {
+      html += `&nbsp; <span style="color:#f57f17">⚠ ${unrecognized.length} unrecognised rule(s) skipped: <em>${unrecognized.join(', ')}</em></span>`;
+    }
+    statusEl.innerHTML = html;
+  }
+}
+
+// ─── Auto-fetch assessment-rules.csv from same directory ─────────────────────
+// Works when the page is served via http(s) or on Firefox with file://.
+// Chrome blocks file:// → file:// fetches — use manual upload button as fallback.
+async function autoFetchRulesCSV() {
+  const statusEl = document.getElementById('rulesStatus');
+  if (statusEl) statusEl.innerHTML = '<span style="color:#888">⏳ Loading assessment-rules.csv…</span>';
+  try {
+    const resp = await fetch('./assessment-rules.csv', { cache: 'no-store' });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const text = await resp.text();
+    const { rows, error } = parseAssessmentRulesCSV(text);
+    if (error || !rows.length) throw new Error(error || 'empty file');
+    const { unrecognized } = applyCSVRules(rows, 'assessment-rules.csv');
+    renderRulesStatus('assessment-rules.csv', unrecognized);
+    return true;
+  } catch (e) {
+    // Silently fall back to built-in rules
+    initDefaultRules();
+    renderRulesStatus('built-in', []);
+    return false;
+  }
+}
+
+// ─── Kick off auto-fetch on page load ────────────────────────────────────────
+autoFetchRulesCSV();
+
 // ─── Processing ───────────────────────────────────────────────────────────────
-function processFiles() {
+async function processFiles() {
   // Read configurable base effort before analysis
   const inputVal = parseFloat(document.getElementById('baseEffortInput').value);
   BASE_EFFORT = (!isNaN(inputVal) && inputVal > 0) ? inputVal : 0.5;
@@ -1311,6 +1483,12 @@ function processFiles() {
 
   document.getElementById('processingMsg').style.display = 'flex';
   document.getElementById('processBtn').disabled = true;
+
+  // ── Always re-fetch assessment-rules.csv before running so the latest
+  //    rules are applied without the user needing to do anything manually.
+  //    Falls back silently to whatever rules were last loaded if fetch fails.
+  await autoFetchRulesCSV();
+
   setTimeout(() => {
     try {
       runAnalysis();
@@ -2625,28 +2803,29 @@ function addMethodologySheet(wb) {
   // Spacer
   ws.addRow([]); ws.lastRow.height = 8.1;
 
-  // Scoring Rules section
-  addSectionHdr('FIGAF Assessment Input Rules (per rule effort cost — see Additional Effort column)');
-  addColHdr(['Rule','Category','Detection Method','Additional Effort','Notes']);
+  // Scoring Rules section — dynamically generated from active rule arrays
+  const srcLabel = rulesSource === 'built-in'
+    ? 'Built-in defaults'
+    : `Loaded from ${rulesSource.replace('csv:','')}`;
+  addSectionHdr(`FIGAF Assessment Input Rules — ${srcLabel} (${RULES_AUTO.length + RULES_MANUAL.length + RULES_REDESIGN.length} active rules)`);
+  addColHdr(['Rule','Category','Effort Multiplier','Additional Effort (days)','Notes / Action Required']);
 
-  const ruleRows = [
-    ['XSLT Mapping',                    'AUTO',    'Tags contain "XSLT_OM"',                                                  '0 days',    'Auto Migration — no manual steps needed'],
-    ['Mapping with Context/Queue Fns',  'AUTO',    'Tags contain "ContextFunctions" or "SingleValue"',                        '0 days',    'Auto Migration'],
-    ['Mapping with Large/Complex Bricks','AUTO',   'Tags contain "MM300Elements", "MM25Nodes", or "MMwith"',                  '0 days',    'Auto Migration'],
-    ['Dynamic Configuration',           'AUTO',    'Sender/Receiver Modules contains "DynamicConfigurationBean"',            '0 days',    'Figaf converts to Properties automatically'],
-    ['B2B Mapping',                     'AUTO',    'Sender/Receiver Tags contain "B2B_Mapping"',                             '0 days',    'MIGs created as one-time activity — no extra effort charged'],
-    ['JAVA Mapping',                    'MANUAL',  'Tags contain "JAVA_OM"',                                                  `+${(1*BASE_EFFORT).toFixed(2)} days (1× base)`, 'Developer must manually verify implementation is as expected'],
-    ['EDI Separator',                   'MANUAL',  'Sender or Receiver adapter type = EDISeparator',                         `+${(1*BASE_EFFORT).toFixed(2)} days (1× base)`, 'TPM setup requires manual activity'],
-    ['REST with JSON Conversion',       'MANUAL',  'Tags contain "RESTwithJSON" (sender or receiver)',                        `+${(1*BASE_EFFORT).toFixed(2)} days (1× base)`, 'Manual configuration changes required'],
-    ['Adapter Module',                  'ONE-TIME','Non-standard custom module bean in Sender/Receiver Modules',             'See One-Time Activities tab',                   'Groovy development tracked as one-time effort — not charged per ICO'],
-    ['nwBPM',                           'REDESIGN','Sender BPM or Receiver BPM column is not empty',                         `+${(4*BASE_EFFORT).toFixed(2)} days (4× base)`, 'Migration not possible — requires full redesign'],
-    ['ABAP Mapping',                    'REDESIGN','Tags contain "ABAP"',                                                     `+${(2*BASE_EFFORT).toFixed(2)} days (2× base)`, 'Migration not possible — requires architectural redesign'],
+  const allActiveRules = [
+    ...RULES_AUTO.map(r    => ({ ...r, cat: 'AUTO'     })),
+    ...RULES_MANUAL.map(r  => ({ ...r, cat: 'MANUAL'   })),
+    ...RULES_REDESIGN.map(r=> ({ ...r, cat: 'REDESIGN' })),
+    // Always include the Adapter Module one-time row
+    { name: 'Adapter Module (dev)', cat: 'ONE-TIME', effort: 0,
+      note: 'Groovy module development tracked as one-time effort — not charged per ICO. See One-Time Activities tab.' }
   ];
-  ruleRows.forEach((row, idx) => {
-    const r = ws.addRow(row); r.height = 18;
-    const bg = idx%2===0 ? C.BAND2 : C.BAND1;
-    r.eachCell((cell, ci) => {
-      s(cell, bg, C.NAVY_FG, ci===1, 9, true, 'left');
+
+  allActiveRules.forEach((rule, idx) => {
+    const effortDays = rule.effort ? `+${(rule.effort * BASE_EFFORT).toFixed(2)} days (${rule.effort}× base)` : '0 days';
+    const row = ws.addRow([rule.name, rule.cat, rule.effort || 0, effortDays, rule.note || '']);
+    row.height = 18;
+    const bg = idx % 2 === 0 ? C.BAND2 : C.BAND1;
+    row.eachCell((cell, ci) => {
+      s(cell, bg, C.NAVY_FG, ci === 1, 9, true, 'left');
     });
   });
 
