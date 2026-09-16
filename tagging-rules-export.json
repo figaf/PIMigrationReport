@@ -1,0 +1,998 @@
+[{
+        "tagName": "SFTPwithArchive",
+        "displayedName": "SFTP with Archive directory",
+        "complexityRate": "20",
+        "description": "The SFTP in Cloud Integration does not have a fault directory. It can be done via an exception branch and place the file with a receiver SFTP channel. ",
+        "objectType": "CHANNEL",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "//*[local-name()='CommunicationChannel'][*[local-name()='AdapterMetadata']/*[local-name()='Name']='SFTP' and *[local-name()='AdapterSpecificAttribute'][*[local-name()='Name']='msg.archive.faulty' and *[local-name()='Value']='1']]",
+        "creationDate": "2024-05-16 13:24:37",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": false,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "communication-channel-filter",
+            "namePattern": null,
+            "direction": "SENDER",
+            "adapterType": null
+        },
+        "agentSystemIds": ["D75", "T75"]
+    }, {
+        "tagName": "DynamicJavaMapping",
+        "displayedName": "DynamicJavaMapping",
+        "complexityRate": null,
+        "description": null,
+        "objectType": "CPI_IFLOW",
+        "platform": "CPI",
+        "evaluatorType": "XPATH",
+        "condition": "//*[local-name()='callActivity'][*[local-name()='extensionElements']/*[local-name()='property'][*[local-name()='key']='activityType' and *[local-name()='value']='Enricher'] and *[local-name()='extensionElements']/*[local-name()='property'][*[local-name()='key']='propertyTable' and contains(*[local-name()='value'], 'DynamicJavaMapping')]]",
+        "creationDate": "2026-06-16 10:14:25",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": false,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["figafpartner"]
+    }, {
+        "tagName": "inbody",
+        "displayedName": "CAMEL uses in.body",
+        "complexityRate": null,
+        "description": "There is some confusion around if camel proper in.body will still work or not. The node does not mention if it is being deprecated. \nSee https://help.sap.com/docs/cloud-integration/sap-cloud-integration/using-camel-simple-expression-language#expressions-supported-by-content-modifier-and-write-variables-step",
+        "objectType": "CPI_IFLOW",
+        "platform": "CPI",
+        "evaluatorType": "REGEX",
+        "condition": "\\$\\{in\\.body",
+        "creationDate": "2026-06-16 10:14:25",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": false,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["figafpartner"]
+    }, {
+        "tagName": "FLWithDynAtributes",
+        "displayedName": "Functional Library with Dynamic Attributes",
+        "complexityRate": null,
+        "description": null,
+        "objectType": "FUNCTION_LIBRARY",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "//functionmodel/implementation[contains(@type, 'udf') and contains(javaText, 'DynamicConfiguration')]",
+        "creationDate": "2026-08-19 05:56:22",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": true,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["D75"]
+    }, {
+        "tagName": "MsgMapUDFWithContainerObject",
+        "displayedName": "Msg Mapping With  UDF containing Container Object",
+        "complexityRate": null,
+        "description": null,
+        "objectType": "MESSAGE_MAPPING",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "//functionmodel/implementation[contains(@type, 'udf') and (contains(javaText, 'getGlobalContainer') or contains(javaText, 'setParameter') or contains(javaText, 'getParameter')  )]",
+        "creationDate": "2026-08-19 07:30:02",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": true,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["D75", "T75"]
+    }, {
+        "tagName": "RFCLookupinMsgMapping",
+        "displayedName": "RFC/SOAP Lookup in Msg Mapping",
+        "complexityRate": null,
+        "description": null,
+        "objectType": "MESSAGE_MAPPING",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "//param[contains(@name,'channel') and (@role,'RFC')]",
+        "creationDate": "2026-08-19 12:36:03",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": false,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["D75"]
+    }, {
+        "tagName": "JDBCLookupInMsgMapping",
+        "displayedName": "JDBCLookupInMsgMapping",
+        "complexityRate": null,
+        "description": null,
+        "objectType": "MESSAGE_MAPPING",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "//param[contains(@name,'db||channel') and (@role,'dbtab')]",
+        "creationDate": "2026-08-19 12:05:36",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": true,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["D75"]
+    }, {
+        "tagName": "MsgMapUDFWithDynAtributes",
+        "displayedName": "Message Mapping UDF With Dynamic Attributes",
+        "complexityRate": null,
+        "description": null,
+        "objectType": "MESSAGE_MAPPING",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "//functionmodel/implementation[contains(@type, 'udf') and contains(javaText, 'DynamicConfiguration')]",
+        "creationDate": "2026-08-19 05:21:30",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": false,
+        "applyOnSynchronization": false,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["D75"]
+    }, {
+        "tagName": "MsgMapUDFWithTransformationParameters",
+        "displayedName": "Msg Mapping With  UDF withTransformationParameters",
+        "complexityRate": null,
+        "description": null,
+        "objectType": "MESSAGE_MAPPING",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "//functionmodel/implementation[contains(@type, 'udf') and (contains(javaText, 'getTransformationParameters'))]",
+        "creationDate": "2026-08-21 13:10:10",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": true,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["D75"]
+    }, {
+        "tagName": "B2B Interface",
+        "displayedName": "B2B Interface",
+        "complexityRate": null,
+        "description": null,
+        "objectType": "CHANNEL",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "//Name='EDISeparator'",
+        "creationDate": "2026-08-20 10:05:20",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": false,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "communication-channel-filter",
+            "namePattern": null,
+            "direction": null,
+            "adapterType": "EDI_SEPARATOR"
+        },
+        "agentSystemIds": ["D75"]
+    }, {
+        "tagName": "FLWithTransformationParameters",
+        "displayedName": "Fun Lib with TransformationParameters",
+        "complexityRate": null,
+        "description": null,
+        "objectType": "FUNCTION_LIBRARY",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "//functionmodel/implementation[contains(@type, 'udf') and (contains(javaText, 'getTransformationParameters'))]",
+        "creationDate": "2026-08-21 13:23:04",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": true,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["D75"]
+    }, {
+        "tagName": "FLWithTraceObject",
+        "displayedName": "Function Lib With UDF containing Trace Object",
+        "complexityRate": null,
+        "description": null,
+        "objectType": "FUNCTION_LIBRARY",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "//functionmodel/implementation[contains(@type, 'udf') and (contains(javaText, 'getTrace')  )]",
+        "creationDate": "2026-08-21 13:25:21",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": true,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["D75"]
+    }, {
+        "tagName": "MM50ContextFunctions",
+        "displayedName": "MM with more than 50 Context functions.",
+        "complexityRate": null,
+        "description": null,
+        "objectType": "MESSAGE_MAPPING",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "count(//*[local-name()='brick' and @type='Func' and (\n@fname='createIf' or \n@fname='removeContexts' or \n@fname='replaceValue' or \n@fname='exists' or \n@fname='SplitByValue' or \n@fname='collapseContexts' or \n@fname='useOneAsMany' or \n@fname='sort' or \n@fname='sortByKey' or \n@fname='mapWithDefault' or \n@fname='formatByExample')]) > 50",
+        "creationDate": "2025-04-16 06:28:08",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": true,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["D75", "T75"]
+    }, {
+        "tagName": "FLWithContainerObject",
+        "displayedName": "Fun Lib with Container Object",
+        "complexityRate": null,
+        "description": null,
+        "objectType": "FUNCTION_LIBRARY",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "//functionmodel/implementation[contains(@type, 'udf') and (contains(javaText, 'getGlobalContainer') or contains(javaText, 'setParameter') or contains(javaText, 'getParameter')  )]",
+        "creationDate": "2026-08-19 07:31:08",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": false,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["D75"]
+    }, {
+        "tagName": "MsgMapUDFWithTraceObject",
+        "displayedName": "Mapping With  UDF containing Trace Object",
+        "complexityRate": null,
+        "description": null,
+        "objectType": "MESSAGE_MAPPING",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "//functionmodel/implementation[contains(@type, 'udf') and (contains(javaText, 'getTrace')  )]",
+        "creationDate": "2026-08-21 13:14:20",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": true,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["D75"]
+    }, {
+        "tagName": "FLwithB2B",
+        "displayedName": "FL with B2B usage",
+        "complexityRate": "30",
+        "description": "B2B Functions is complicated when migrated to Integration Suite",
+        "objectType": "FUNCTION_LIBRARY",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "//*/imports[contains(text(), 'com.sap.aii.tpm')]",
+        "creationDate": "2024-05-16 13:24:37",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": false,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["D75"]
+    }, {
+        "tagName": "B2B_Mapping_TRADACOM",
+        "displayedName": "B2B Mapping TRADACOM",
+        "complexityRate": null,
+        "description": null,
+        "objectType": "MESSAGE_MAPPING",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "//brick[contains(@path, 'S_STX') or contains(@path, 'S_END') ]",
+        "creationDate": "2026-08-21 13:41:06",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": true,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["D75"]
+    }, {
+        "tagName": "FilterWithCamelProperty",
+        "displayedName": "Camel314 FilterWithCamelProperty",
+        "complexityRate": null,
+        "description": "3435465 Usage of Property in filter steps\n\nIn the filter “${property.propertyname}” needs to be changed to “${exchangeProperty.PropertyName}”. It mentions filter steps where it is executed and where SAP may not have performed the mapping to the Camel step.",
+        "objectType": "CPI_IFLOW",
+        "platform": "CPI",
+        "evaluatorType": "XPATH",
+        "condition": "//*[local-name()='callActivity'][*[local-name()='extensionElements']/*[local-name()='property'][*[local-name()='key']='activityType' and *[local-name()='value']='Filter'] and *[local-name()='extensionElements']/*[local-name()='property'][*[local-name()='key']='wrapContent' and contains(*[local-name()='value'], '${property')]]",
+        "creationDate": "2026-06-16 10:14:25",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": false,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["figafpartner"]
+    }, {
+        "tagName": "DefaultScriptName",
+        "displayedName": "Using default script name in your iflow",
+        "complexityRate": "10",
+        "description": "You are using standard scripts names in your iflow",
+        "objectType": "CPI_IFLOW",
+        "platform": "CPI",
+        "evaluatorType": "XPATH",
+        "condition": "//ifl:property[key='script' and matches(value, 'script\\d+\\.groovy') or key='mappinguri' and matches(value, 'XSLTMapping\\d+\\.xsl')]",
+        "creationDate": "2024-05-16 13:24:37",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": false,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["figafpartner"]
+    }, {
+        "tagName": "ABAP_OM",
+        "displayedName": "ABAP Class in Operational Mapping",
+        "complexityRate": null,
+        "description": null,
+        "objectType": "OPERATION_MAPPING",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "//lnkRole/lnk/key[@typeID='MAP_ARCHIVE_PRG' and //elem='abap']",
+        "creationDate": "2026-03-04 07:51:21",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": false,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["D75", "T75"]
+    }, {
+        "tagName": "RESTwithJSONtoXMLSender",
+        "displayedName": "Rest using JSON to XML",
+        "complexityRate": null,
+        "description": "Rest Sender using JSON to XML converter.\nFor now manual usage of converter",
+        "objectType": "CHANNEL",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "//AdapterSpecificAttribute[(Name='in.format.convert' and Value='1') or (Name='in.outFormat.convert'  and Value='1')]",
+        "creationDate": "2024-05-16 13:24:37",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": false,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "communication-channel-filter",
+            "namePattern": null,
+            "direction": "SENDER",
+            "adapterType": "REST"
+        },
+        "agentSystemIds": ["D75", "T75"]
+    }, {
+        "tagName": "B2B_TPM_AdapterModulesReciever",
+        "displayedName": "B2B TPM AdapterModules in Comm Channel Reciever",
+        "complexityRate": null,
+        "description": null,
+        "objectType": "CHANNEL",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "//ModuleProcess/ProcessStep[contains(ModuleName, 'TPM')]",
+        "creationDate": "2026-08-21 16:32:01",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": false,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "communication-channel-filter",
+            "namePattern": null,
+            "direction": "RECEIVER",
+            "adapterType": "EDI_SEPARATOR"
+        },
+        "agentSystemIds": ["D75"]
+    }, {
+        "tagName": "B2B_Mapping_X12",
+        "displayedName": "B2B Mapping with X12 Message",
+        "complexityRate": null,
+        "description": null,
+        "objectType": "MESSAGE_MAPPING",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "//brick[contains(@path, 'S_ISA') or contains(@path, 'S_IEA') ]",
+        "creationDate": "2026-08-21 13:37:55",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": true,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["D75"]
+    }, {
+        "tagName": "B2B_TPM_AdapterModulesSender",
+        "displayedName": "B2B TPM AdapterModules in Comm Channel Sender",
+        "complexityRate": null,
+        "description": null,
+        "objectType": "CHANNEL",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "//ModuleProcess/ProcessStep[contains(ModuleName, 'TPM')]",
+        "creationDate": "2026-08-21 16:41:05",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": false,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "communication-channel-filter",
+            "namePattern": null,
+            "direction": "SENDER",
+            "adapterType": "EDI_SEPARATOR"
+        },
+        "agentSystemIds": ["D75"]
+    }, {
+        "tagName": "MMUsingTPMFunctionalProfile",
+        "displayedName": "MMUsingTPMFunctionalProfile",
+        "complexityRate": null,
+        "description": null,
+        "objectType": "MESSAGE_MAPPING",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "//brick[contains(@type,'Func') and contains(@fns,'UDFTPMPool')]",
+        "creationDate": "2026-08-26 12:43:12",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": true,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["D75"]
+    },{
+        "tagName": "B2B_TPMPool_MsgMapp",
+        "displayedName": "B2B TPMPool used in MsgMapp",
+        "complexityRate": null,
+        "description": null,
+        "objectType": "MESSAGE_MAPPING",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "//brick[contains(@type,'Func') and contains(@fns,'UDFTPMPool')]",
+        "creationDate": "2026-08-21 16:44:38",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": true,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["D75"]
+    }, {
+        "tagName": "FileContentConversion_Receiver",
+        "displayedName": "FileContentConversion_Receiver",
+        "complexityRate": null,
+        "description": null,
+        "objectType": "CHANNEL",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "//MessageProtocol='FileCSV'",
+        "creationDate": "2026-03-26 09:00:47",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": false,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "communication-channel-filter",
+            "namePattern": null,
+            "direction": "RECEIVER",
+            "adapterType": "FILE"
+        },
+        "agentSystemIds": ["D75", "T75"]
+    }, {
+        "tagName": "FileContentConversion_Sender",
+        "displayedName": "FileContentConversion_Sender",
+        "complexityRate": null,
+        "description": null,
+        "objectType": "CHANNEL",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "//MessageProtocol='FileCSV'",
+        "creationDate": "2026-03-26 09:03:21",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": false,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "communication-channel-filter",
+            "namePattern": null,
+            "direction": "SENDER",
+            "adapterType": "FILE"
+        },
+        "agentSystemIds": ["D75", "T75"]
+    }, {
+        "tagName": "JAVA_OM",
+        "displayedName": "Java Class in Operation Mapping",
+        "complexityRate": null,
+        "description": null,
+        "objectType": "OPERATION_MAPPING",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "//lnkRole/lnk/key[@typeID='MAP_ARCHIVE_PRG' and //elem='class']",
+        "creationDate": "2026-03-04 07:49:18",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": false,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["D75", "T75"]
+    }, {
+        "tagName": "LineBreakAndTabCharacters",
+        "displayedName": "Camel314 LineBreakAndTabCharacters",
+        "complexityRate": null,
+        "description": "SNOTE: 3516570  Problem with operators using \\n \\r \\t\nThere is a problem with this operators when moving to Camel 3.14. Should be changed to Groovy script",
+        "objectType": "CPI_IFLOW",
+        "platform": "CPI",
+        "evaluatorType": "XPATH",
+        "condition": "//*[local-name()='callActivity'][*[local-name()='extensionElements']/*[local-name()='property'][(*[local-name()='key']='activityType') and (*[local-name()='value']='Enricher')] and *[local-name()='extensionElements']/*[local-name()='property'][(*[local-name()='key'] = ('wrapContent', 'headerTable', 'propertyTable')) and matches(*[local-name()='value'], '\\$\\{[^}]*\\[(\\\\r|\\\\n|\\\\t)[^}]*\\}')]]",
+        "creationDate": "2026-06-16 10:14:25",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": false,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["figafpartner"]
+    }, {
+        "tagName": "MaintainOrderatRuntime",
+        "displayedName": "Maintain order at runtime",
+        "complexityRate": "50",
+        "description": "Outgoing flow requires maintain order in runtime. ",
+        "objectType": "ICO",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "//ReceiverInterfaces[QualityOfService='EOIO']",
+        "creationDate": "2024-05-16 13:24:37",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": false,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["D75"]
+    }, {
+        "tagName": "MMwithParamterers",
+        "displayedName": "MM with Paramterers",
+        "complexityRate": "10",
+        "description": "MM with Paramterers can be a challenge to migrate use Figaf for it",
+        "objectType": "MESSAGE_MAPPING",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "//XiTrafo/container/element",
+        "creationDate": "2024-05-16 13:24:37",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": false,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["D75", "T75"]
+    }, {
+        "tagName": "MessageImported",
+        "displayedName": "XSD is imported type",
+        "complexityRate": "10",
+        "description": "In some cases, a message mapping contains a link to an imported message. Just import the XSD into the iflow manually. ",
+        "objectType": "MESSAGE_MAPPING",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "//p1:key[@typeID='MAP_IMP_XSD_XML']",
+        "creationDate": "2024-05-16 13:24:37",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": false,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["D75", "T75"]
+    }, {
+        "tagName": "MMwithValueMapping",
+        "displayedName": "Value mapping used in a MM",
+        "complexityRate": null,
+        "description": "Message Mappings with Value mappings may cause some problems when migrating. You will need to migrate the value mappings manually. ",
+        "objectType": "MESSAGE_MAPPING",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "//*[local-name()='brick' and @fname='valuemap']",
+        "creationDate": "2024-05-16 13:24:37",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": true,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["D75", "T75"]
+    }, {
+        "tagName": "B2B_Mapping_EDIFACT",
+        "displayedName": "B2B_Mapping",
+        "complexityRate": null,
+        "description": null,
+        "objectType": "MESSAGE_MAPPING",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "//brick[contains(@path, 'S_UNB') or contains(@path, 'S_UNZ') ]",
+        "creationDate": "2026-05-08 09:13:21",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": true,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["D75"]
+    }, {
+        "tagName": "MMwithUDFDateTimePool",
+        "displayedName": "MM using custom UDFDateTimePool functions",
+        "complexityRate": null,
+        "description": "Template for finding mappings containing \"CustomFunction\" using the UDFDateTimePool package.\n\nExample: use calculate12222 as CustomFunction",
+        "objectType": "MESSAGE_MAPPING",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "count(//*[local-name()='brick'\n        and @fname='CustomFunction'\n        and @type='Func'\n        and @fns='UDFNodePool'\n      ]) > 0",
+        "creationDate": "2025-04-16 13:28:17",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": true,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["D75"]
+    }, {
+        "tagName": "RESTwithJSONtoXMLReceiver",
+        "displayedName": "Rest using JSON to XML",
+        "complexityRate": null,
+        "description": "Rest Sender using JSON to XML converter.\nFor now manual usage of converter",
+        "objectType": "CHANNEL",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "//AdapterSpecificAttribute[(Name='out.format.convert' and Value='1') or (Name='out.outFormat.convert'  and Value='1')]",
+        "creationDate": "2024-05-16 13:24:37",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": false,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "communication-channel-filter",
+            "namePattern": null,
+            "direction": "RECEIVER",
+            "adapterType": "REST"
+        },
+        "agentSystemIds": ["D75", "T75"]
+    }, {
+        "tagName": "XSDwithImport",
+        "displayedName": "XSD WSDL with import",
+        "complexityRate": null,
+        "description": null,
+        "objectType": "EXTERNAL_DEFINITION",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "//import",
+        "creationDate": "2024-05-16 13:24:37",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": false,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["D75", "T75"]
+    }, {
+        "tagName": "ConfigScenarioWithSpecificText",
+        "displayedName": "ConfigScenario With Specific Text",
+        "complexityRate": null,
+        "description": null,
+        "objectType": "SCENARIO",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "/ns2:ConfigurationScenario/AdministrativeData/FolderPathID[text()='/FIGAF - mixed/']",
+        "creationDate": "2026-03-16 17:49:56",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": false,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["D75", "T75"]
+    }, {
+        "tagName": "XSLT_OM",
+        "displayedName": "XSLT in Operational Mapping",
+        "complexityRate": null,
+        "description": null,
+        "objectType": "OPERATION_MAPPING",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "//lnkRole/lnk/key[@typeID='MAP_ARCHIVE_PRG' and //elem='xsl']",
+        "creationDate": "2026-03-04 07:43:54",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": false,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["D75", "T75"]
+    }, {
+        "tagName": "UnsecureFTP",
+        "displayedName": "Unsecure usage of FTP",
+        "complexityRate": null,
+        "description": "You cannot use an unsecure FTP channel use FTPS or SFTP. \n",
+        "objectType": "CPI_IFLOW",
+        "platform": "CPI",
+        "evaluatorType": "XPATH",
+        "condition": "//property[key='encryption' and value='ftp']",
+        "creationDate": "2024-05-16 13:24:37",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": false,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["figafpartner"]
+    }, {
+        "tagName": "MM25Nodes",
+        "displayedName": "MM with more than 25 nodes in one element. ",
+        "complexityRate": null,
+        "description": null,
+        "objectType": "MESSAGE_MAPPING",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "boolean(//*[local-name()='brick' and @type='Dst'][count(.//*[local-name()='brick']) > 25])",
+        "creationDate": "2025-04-16 06:28:08",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": true,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["D75", "T75"]
+    }, {
+        "tagName": "ICOwithExternalReceiverRule",
+        "displayedName": "ICOwithExternalReceiverRule",
+        "complexityRate": null,
+        "description": null,
+        "objectType": "ICO",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "//Receivers/ExternalReceiverRule",
+        "creationDate": "2026-06-16 10:14:25",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": false,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["D75", "T75"]
+    }, {
+        "tagName": "ICOwithOperationSpecificRouting",
+        "displayedName": "ICOwithOperationSpecificRouting",
+        "complexityRate": null,
+        "description": null,
+        "objectType": "ICO",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "//Receivers/ReceiverRule/Operation",
+        "creationDate": "2026-06-16 10:14:25",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": false,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["D75", "T75"]
+    }, {
+        "tagName": "IFlowsWithExchangePropertyInModel",
+        "displayedName": "IFlowsWithExchangePropertyInModel",
+        "complexityRate": null,
+        "description": "Tagging rule to identify IFlows that access Camel Exchange properties directly in their BPMN model",
+        "objectType": "CPI_IFLOW",
+        "platform": "CPI",
+        "evaluatorType": "REGEX",
+        "condition": "\\$\\{property\\.\\w+}",
+        "creationDate": "2025-12-29 17:19:34",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": false,
+        "applyOnSynchronization": false,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["figafpartner"]
+    }, {
+        "tagName": "MessageTypeWithOriginal",
+        "displayedName": "Messagetype with Original",
+        "complexityRate": "0",
+        "description": "The message type has an original link, which does not impact the migration. For now, we don't know what this is used for. ",
+        "objectType": "MESSAGE_TYPE",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "//lnkRole[@role = '_original']",
+        "creationDate": "2026-06-16 10:14:25",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": false,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["D75", "T75"]
+    }, {
+        "tagName": "Timeout",
+        "displayedName": "Timeout",
+        "complexityRate": null,
+        "description": "Time out shoudl be less than 60 seconds",
+        "objectType": "CPI_IFLOW",
+        "platform": "CPI",
+        "evaluatorType": "XPATH",
+        "condition": "//*:property[key='httpRequestTimeout'  and  value='60000']",
+        "creationDate": "2026-06-16 10:14:25",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": false,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["figafpartner"]
+    }, {
+        "tagName": "FilewithCMD",
+        "displayedName": "File with command",
+        "complexityRate": null,
+        "description": "File scearios using Commands on the system. You should find a way to run the commands differently. Some of the processing can be moved to CI. ",
+        "objectType": "CHANNEL",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "//AdapterSpecificAttribute[Name='file.preprocess.execute'  or Name='file.execute'][string-length(Value)>1 ]",
+        "creationDate": "2024-05-16 13:24:37",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": false,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "communication-channel-filter",
+            "namePattern": null,
+            "direction": null,
+            "adapterType": "FILE"
+        },
+        "agentSystemIds": ["D75", "T75"]
+    }, {
+        "tagName": "FaultMapping",
+        "displayedName": "Fault mapping used",
+        "complexityRate": null,
+        "description": null,
+        "objectType": "OPERATION_MAPPING",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "//lnkRole[@role='FAULT_TRAFO']",
+        "creationDate": "2024-05-16 13:24:37",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": false,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["D75", "T75"]
+    }, {
+        "tagName": "MM300Elements ",
+        "displayedName": "MM with more than 300 source mappings",
+        "complexityRate": null,
+        "description": null,
+        "objectType": "MESSAGE_MAPPING",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "count(//transformation//*[local-name()='brick' and @type='Src']) > 300",
+        "creationDate": "2025-04-16 06:28:08",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": true,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["D75", "T75"]
+    }, {
+        "tagName": "MMwith10Functions",
+        "displayedName": "MM with more than 10 Functions",
+        "complexityRate": "10",
+        "description": "MM with too many UDF could be a problem when migrating and could require some cleanup. ",
+        "objectType": "MESSAGE_MAPPING",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "count(//*[local-name()='functionmodel']/*[local-name()='signature']) > 10",
+        "creationDate": "2024-05-16 13:24:37",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": true,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["D75", "T75"]
+    }, {
+        "tagName": "MMwithIA",
+        "displayedName": "MM with Imported Archive",
+        "complexityRate": "20",
+        "description": "Message mappings which uses imported archives is a problem when migrating",
+        "objectType": "MESSAGE_MAPPING",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "//*[local-name()='lnkRole' and @role='USED_JARS']",
+        "creationDate": "2024-05-16 13:24:37",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": false,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["D75", "T75"]
+    }, {
+        "tagName": "brokenModule",
+        "displayedName": "brokenModule",
+        "complexityRate": null,
+        "description": null,
+        "objectType": "CHANNEL",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "//ProcessStep[not(ModuleName)]",
+        "creationDate": "2026-06-16 10:14:25",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": false,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["T75", "D75"]
+    }, {
+        "tagName": "ICOwithExtendedReceiverDetermination",
+        "displayedName": "ICOwithExtendedReceiverDetermination",
+        "complexityRate": null,
+        "description": null,
+        "objectType": "ICO",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "//Receivers/DynamicReceiverRule",
+        "creationDate": "2026-06-16 10:14:25",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": false,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["D75", "T75"]
+    }, {
+        "tagName": "MMwithIfmessage",
+        "displayedName": "MM with IfMessage",
+        "complexityRate": null,
+        "description": null,
+        "objectType": "MESSAGE_MAPPING",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "//key[@typeID = 'ifmmessage']",
+        "creationDate": "2026-06-16 10:14:25",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": false,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["D75", "T75"]
+    }, {
+        "tagName": "MultipleSchemas",
+        "displayedName": "MultipleSchemas",
+        "complexityRate": null,
+        "description": null,
+        "objectType": "EXTERNAL_DEFINITION",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "count(//schema[@targetNamespace]) != count(distinct-values(//schema/@targetNamespace))",
+        "creationDate": "2026-06-16 10:14:25",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": false,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["D75", "T75"]
+    }, {
+        "tagName": "MMwithJavaMapping",
+        "displayedName": "MM with JavaMapping",
+        "complexityRate": "50",
+        "description": "In Message Mappings, you did have an option to use it for running message mappings. It was a bad practice but it could cause problems for the migration. ",
+        "objectType": "MESSAGE_MAPPING",
+        "platform": "PRO",
+        "evaluatorType": "XPATH",
+        "condition": "//*[local-name()='globals']/*[local-name()='javaText'][contains(., 'transform(') or contains(., 'execute(')]",
+        "creationDate": "2024-05-16 13:24:37",
+        "createdBy": "kie@figaf.com",
+        "applyConditionToInternalPayload": true,
+        "applyOnSynchronization": true,
+        "objectScopeCriteria": {
+            "type": "null-filter"
+        },
+        "agentSystemIds": ["D75", "T75"]
+    }
+]

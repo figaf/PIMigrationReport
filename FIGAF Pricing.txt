@@ -1,0 +1,19 @@
+Figaf DevOps Suite for SAP - One tool to handle all of your SAP Integration processes
+Devops Prices are typically billed annually based on the number of integrations (such as iFlows, MAGs, and B2B agreements)in your development system: 
+Smaller Landscape: €2,000 per year for 0–100 integrations.
+Medium Landscape: €3,800 per year for 101–500 integrations.
+Large Landscape: €4,700 per year for 500–1,000 integrations.
+Enterprise Landscape: Available upon request for 1,000+ integrations.
+
+Free Migration Edition: Free for up to 12 months to assess landscapes and test migrated iFlows using messages from SAP PI.
+Figaf DevOps Suite, Migration Edition - Migrate to the latest SAP Integration Platform with ease.
+Pricing determined by the size of your migration project with the migration of Migration Objects. 
+Price per migration object.Starts at €100 per object (ICO/Receiver Determination), with volume discounts scaling down for larger projects:
+Small Migration (0–200 objects): €100 per object
+Medium Migration (201–500 objects): €80 per object
+Large Migration (501–1000 objects): €70 per object
+Enterprise Migration (over 1000 objects): €60 per object Testing License (Post-1 Year): Starts at €1,000 per month if you need to continue testing after the initial period.
+Add-on: Includes transport integration, governance, and monitoring, starting at around €2,000 per month. )
+SAP BTP Infrastructure Cost: Running Figaf on SAP BTP typically costs between €200 to €400 per month depending on system size, paid using your SAP BTP credits.
+
+

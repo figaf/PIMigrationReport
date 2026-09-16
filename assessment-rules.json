@@ -1,0 +1,634 @@
+[{
+        "category": "AUTO",
+        "ruleName": "B2B Mapping",
+        "detectionCondition": "Tags contain 'B2B_Mapping_EDIFACT' or 'B2B_Mapping_TRADACOM' or 'B2B_Mapping_X12'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "MIGs created as one-time activity — auto migrated by Figaf"
+    }, {
+        "category": "AUTO",
+        "ruleName": "XSLT Mapping",
+        "detectionCondition": "Tags contain 'XSLT_OM'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "Auto Migration supported by Figaf"
+    }, {
+        "category": "AUTO",
+        "ruleName": "Mapping – Context/Queue Functions",
+        "detectionCondition": "Tags contain 'ContextFunctions' or 'SingleValue'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "Auto Migration supported by Figaf"
+    }, {
+        "category": "AUTO",
+        "ruleName": "Mapping – Large/Complex Bricks",
+        "detectionCondition": "Tags contain 'MM300Elements', 'MM25Nodes', or 'MMwith'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "Auto Migration supported by Figaf"
+    }, {
+        "category": "AUTO",
+        "ruleName": "Dynamic Configuration",
+        "detectionCondition": "Modules contain 'DynamicConfigurationBean'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "Figaf converts to iFlow Properties automatically"
+    }, {
+        "category": "AUTO",
+        "ruleName": "Adapter Module",
+        "detectionCondition": "Non-standard module present in Sender/Receiver Modules",
+        "effortMultiplier": 0.5,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "Shown informational in ICO verdict; effort tracked in One-Time Activities only (0.5x base), Most like converted by Clude"
+    }, {
+        "category": "MANUAL",
+        "ruleName": "JAVA Mapping",
+        "detectionCondition": "Tags contain 'JAVA_OM'",
+        "effortMultiplier": 0.5,
+        "scoreImpact": -10,
+        "verdictImpact": "Migrate + Manual Steps",
+        "notes": "Requires manual re-implementation of Java mapping logic"
+    }, {
+        "category": "AUTO+MANUAL",
+        "ruleName": "EDI Separator",
+        "detectionCondition": "Sender or Receiver adapter type = 'EDISeparator'",
+        "effortMultiplier": 1,
+        "scoreImpact": -10,
+        "verdictImpact": "Migrate + Manual Steps",
+        "notes": "EDI-specific configuration required per partner"
+    }, {
+        "category": "MANUAL",
+        "ruleName": "REST with JSON Conversion",
+        "detectionCondition": "Tags contain 'RESTwithJSON'",
+        "effortMultiplier": 1,
+        "scoreImpact": -10,
+        "verdictImpact": "Migrate + Manual Steps",
+        "notes": "JSON conversion steps need manual configuration in iFlow"
+    }, {
+        "category": "REDESIGN",
+        "ruleName": "nwBPM",
+        "detectionCondition": "Sender BPM or Receiver BPM column is not empty",
+        "effortMultiplier": 4,
+        "scoreImpact": -25,
+        "verdictImpact": "Needs Redesign",
+        "notes": "BPM workflows must be fully redesigned as iFlows"
+    }, {
+        "category": "REDESIGN",
+        "ruleName": "ABAP Mapping",
+        "detectionCondition": "Tags contain 'ABAP'",
+        "effortMultiplier": 2,
+        "scoreImpact": -25,
+        "verdictImpact": "Needs Redesign",
+        "notes": "ABAP mappings must be rewritten in Groovy or XSLT"
+    }, {
+        "category": "REDESIGN",
+        "ruleName": "RFC or JDBC Lookup in Message Mapping",
+        "detectionCondition": "Tags contain 'RFCLookupinMsgMapping' or 'JDBCLookupInMsgMapping'",
+        "effortMultiplier": 4,
+        "scoreImpact": -25,
+        "verdictImpact": "Needs Redesign",
+        "notes": "RFC/JDBC lookups require iFlow adapter connections per lookup call"
+    }, {
+        "category": "AUTO",
+        "ruleName": "B2B TPM Adapter Modules",
+        "detectionCondition": "Tags contain 'B2B_TPM_AdapterModulesSender' or 'B2B_TPM_AdapterModulesReciever'",
+        "effortMultiplier": 2,
+        "scoreImpact": -25,
+        "verdictImpact": "Needs Redesign but Figaf Handles the migration",
+        "notes": "Adapter Modules must be rewritten in Groovy. Figaf can create the skeleton framework"
+    }, {
+        "category": "REDESIGN",
+        "ruleName": "Trace Object in UDF or Function Library",
+        "detectionCondition": "Tags contain 'FLWithTraceObject' or 'MsgMapUDFWithTraceObject'",
+        "effortMultiplier": 2,
+        "scoreImpact": -25,
+        "verdictImpact": "Needs Redesign",
+        "notes": "Trace object is not available in CPI and must be redesigned"
+    }, {
+        "category": "ONE-TIME",
+        "ruleName": "Adapter Connection Setup",
+        "detectionCondition": "One entry per unique adapter type across all ICOs",
+        "effortMultiplier": "User-editable (default varies by adapter type)",
+        "scoreImpact": "N/A",
+        "verdictImpact": "N/A",
+        "notes": "JDBC/RFC/HTTP/SFTP default 0.2d; unknown adapters default 1.0d"
+    }, {
+        "category": "ONE-TIME",
+        "ruleName": "B2B MIG Creation",
+        "detectionCondition": "Derived from Operation Mapping names (EDIFACT/X12 patterns)",
+        "effortMultiplier": "0.1d fixed",
+        "scoreImpact": "N/A",
+        "verdictImpact": "N/A",
+        "notes": "Patterns: ORDERS_96A, ASC850_005010 — deduplicated by type+version"
+    }, {
+        "category": "ONE-TIME",
+        "ruleName": "Adapter Module Development",
+        "detectionCondition": "Unique custom Groovy module names extracted from ICOs",
+        "effortMultiplier": "2x BASE_EFFORT",
+        "scoreImpact": "N/A",
+        "verdictImpact": "N/A",
+        "notes": "Standard AF_Modules excluded; strategy fetched from SAP Help Portal with fallback"
+    }, {
+        "category": "AUTO",
+        "ruleName": "B2B Interface (EDI Separator)",
+        "detectionCondition": "Tags contain 'B2B Interface'",
+        "effortMultiplier": 1,
+        "scoreImpact": 10,
+        "verdictImpact": "None",
+        "notes": "MIGs created as one-time activity — TPM Partner date keyed into FIgaf tool manually,Trading Parter and identifier system etc are created by FIgaf auto, TPMA Template created manually, TPMA auto migrated by Figaf"
+    }, {
+        "category": "REDESIGN",
+        "ruleName": "MM Using TPM FunctionalProfile /CPA Cache",
+        "detectionCondition": "Tags contain 'MMUsingTPMFunctionalProfile'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "TPM Functions using Functional Profile are not supported and needs redesign  Platform: PRO | Object: MESSAGE_MAPPING"
+    }, {
+        "category": "MANUAL",
+        "ruleName": "B2B TPMPool used in MsgMapp",
+        "detectionCondition": "Tags contain 'B2B_TPMPool_MsgMapp'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "TPM Functions are created as one-time activity  Platform: PRO | Object: MESSAGE_MAPPING"
+    }, {
+        "category": "AUTO",
+        "ruleName": "ConfigScenario With Specific Text",
+        "detectionCondition": "Tags contain 'ConfigScenarioWithSpecificText'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "Platform: PRO | Object: SCENARIO"
+    }, {
+        "category": "AUTO",
+        "ruleName": "Fault mapping used",
+        "detectionCondition": "Tags contain 'FaultMapping'",
+        "effortMultiplier": 0.5,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "Platform: PRO | Object: OPERATION_MAPPING"
+    }, {
+        "category": "REDESIGN",
+        "ruleName": "File with command",
+        "detectionCondition": "Tags contain 'FilewithCMD'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "File scearios using Commands on the system. You should find a way to run the commands differently. | Platform: PRO | Object: CHANNEL"
+    }, {
+        "category": "AUTO",
+        "ruleName": "FileContentConversion_Receiver",
+        "detectionCondition": "Tags contain 'FileContentConversion_Receiver'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "Platform: PRO | Object: CHANNEL"
+    }, {
+        "category": "AUTO",
+        "ruleName": "FileContentConversion_Sender",
+        "detectionCondition": "Tags contain 'FileContentConversion_Sender'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "Platform: PRO | Object: CHANNEL"
+    }, {
+        "category": "MANUAL",
+        "ruleName": "FL with B2B usage",
+        "detectionCondition": "Tags contain 'FLwithB2B'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "B2B Functions is complicated when migrated to Integration Suite | Platform: PRO | Object: FUNCTION_LIBRARY | complexityRate=30"
+    }, {
+        "category": "AUTO",
+        "ruleName": "Fun Lib with Container Object",
+        "detectionCondition": "Tags contain 'FLWithContainerObject'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "Figaf comments the code and convert the attributes into exchange properties|Platform: PRO | Object: FUNCTION_LIBRARY"
+    }, {
+        "category": "AUTO",
+        "ruleName": "Fun Lib with TransformationParameters",
+        "detectionCondition": "Tags contain 'FLWithTransformationParameters'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "Figaf comments the code and convert the attributes into exchange properties|Platform: PRO | Object: FUNCTION_LIBRARY"
+    }, {
+        "category": "AUTO",
+        "ruleName": "Functional Library with Dynamic Attributes",
+        "detectionCondition": "Tags contain 'FLWithDynAtributes'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "Figaf comments the code and convert the attributes into exchange properties|Platform: PRO | Object: FUNCTION_LIBRARY"
+    }, {
+        "category": "AUTO",
+        "ruleName": "ICOwithExtendedReceiverDetermination",
+        "detectionCondition": "Tags contain 'ICOwithExtendedReceiverDetermination'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "FIgaf Auto migrates the flow if it is condition base not supported if its a mapping based |Platform: PRO | Object: ICO"
+    }, {
+        "category": "AUTO",
+        "ruleName": "ICOwithExternalReceiverRule",
+        "detectionCondition": "Tags contain 'ICOwithExternalReceiverRule'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "FIgaf migrates the flow |Platform: PRO | Object: ICO"
+    }, {
+        "category": "MANUAL",
+        "ruleName": "ICOwithOperationSpecificRouting",
+        "detectionCondition": "Tags contain 'ICOwithOperationSpecificRouting'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "FIgaf migrates the flow |Platform: PRO | Object: ICO"
+    }, {
+        "category": "REDESIGN",
+        "ruleName": "Maintain order at runtime",
+        "detectionCondition": "Tags contain 'MaintainOrderatRuntime'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "Outgoing flow requires maintain order in runtime.  | Platform: PRO | Object: ICO | complexityRate=50"
+    }, {
+        "category": "AUTO",
+        "ruleName": "Message Mapping UDF With Dynamic Attributes",
+        "detectionCondition": "Tags contain 'MsgMapUDFWithDynAtributes'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "Figaf comments the code and convert the attributes into exchange properties|Platform: PRO | Object: MESSAGE_MAPPING"
+    }, {
+        "category": "AUTO",
+        "ruleName": "Messagetype with Original",
+        "detectionCondition": "Tags contain 'MessageTypeWithOriginal'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "The message type has an original link, which does not impact the migration. For now, we don't know what this is used for | Platform: PRO | Object: MESSAGE_TYPE | complexityRate=0"
+    }, {
+        "category": "AUTO",
+        "ruleName": "Msg Mapping With  UDF containing Container Object",
+        "detectionCondition": "Tags contain 'MsgMapUDFWithContainerObject'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "Platform: PRO | Object: MESSAGE_MAPPING"
+    }, {
+        "category": "AUTO",
+        "ruleName": "Msg Mapping With  UDF withTransformationParameters",
+        "detectionCondition": "Tags contain 'MsgMapUDFWithTransformationParameters'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "Platform: PRO | Object: MESSAGE_MAPPING"
+    }, {
+        "category": "AUTO",
+        "ruleName": "MultipleSchemas",
+        "detectionCondition": "Tags contain 'MultipleSchemas'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "Platform: PRO | Object: EXTERNAL_DEFINITION"
+    }, {
+        "category": "MANUAL",
+        "ruleName": "SFTP with Archive directory",
+        "detectionCondition": "Tags contain 'SFTPwithArchive'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "The SFTP in Cloud Integration does not have a fault directory. It can be done via an exception branch and place the file | Platform: PRO | Object: CHANNEL | complexityRate=20"
+    }, {
+        "category": "MANUAL",
+        "ruleName": "XSD is imported type",
+        "detectionCondition": "Tags contain 'MessageImported'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "In some cases, a message mapping contains a link to an imported message. Just import the XSD into the iflow manually.  | Platform: PRO | Object: MESSAGE_MAPPING | complexityRate=10"
+    }, {
+        "category": "MANUAL",
+        "ruleName": "XSD WSDL with import",
+        "detectionCondition": "Tags contain 'XSDwithImport'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "Platform: PRO | Object: EXTERNAL_DEFINITION"
+    }, {
+        "category": "AUTO",
+        "ruleName": "Dynamic Configuration Module",
+        "detectionCondition": "Modules contain 'localejbs/AF_Modules/DynamicConfigurationBean'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "The module non-exist in SAP CPI and Dynamic Config is COnverted into System Properties by Figaf"
+    }, {
+        "category": "MANUAL",
+        "ruleName": "Get Payload Value Module",
+        "detectionCondition": "Modules contain 'localejbs/AF_Modules/GetPayloadValueBean'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "Standard adapter module identified in Rules.txt export; shown informational in ICO verdict, effort tracked under Adapter Module Development one-time activity (2x base) only if non-standard"
+    }, {
+        "category": "MANUAL",
+        "ruleName": "Message Logger Module",
+        "detectionCondition": "Modules contain 'localejbs/AF_Modules/MessageLoggerBean'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "The Message logging is done differently in SAP CPI"
+    }, {
+        "category": "MANUAL",
+        "ruleName": "Message Transform Module",
+        "detectionCondition": "Modules contain 'localejbs/AF_Modules/MessageTransformBean'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "Message Transformation Bean not required as Figaf/SAP Content Converter Script can be choosen"
+    }, {
+        "category": "MANUAL",
+        "ruleName": "Payload Swap Module",
+        "detectionCondition": "Modules contain 'localejbs/AF_Modules/PayloadSwapBean'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "The Payload Swapping is done differently in SAP CPI"
+    }, {
+        "category": "MANUAL",
+        "ruleName": "Payload Zip Module",
+        "detectionCondition": "Modules contain 'localejbs/AF_Modules/PayloadZipBean'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "The Message Zip is done differently in SAP CPI"
+    }, {
+        "category": "MANUAL",
+        "ruleName": "Put Payload Value Module",
+        "detectionCondition": "Modules contain 'localejbs/AF_Modules/PutPayloadValueBean'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "The Put Payload Value is done differently in SAP CPI"
+    }, {
+        "category": "MANUAL",
+        "ruleName": "Request One-Way Module",
+        "detectionCondition": "Modules contain 'localejbs/AF_Modules/RequestOnewayBean'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "The Request One-Way is done differently in SAP CPI"
+    }, {
+        "category": "MANUAL",
+        "ruleName": "Request-Response Module",
+        "detectionCondition": "Modules contain 'localejbs/AF_Modules/RequestResponseBean'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "The Request-Response is done differently in SAP CPI"
+    }, {
+        "category": "MANUAL",
+        "ruleName": "Response One-Way Module",
+        "detectionCondition": "Modules contain 'localejbs/AF_Modules/ResponseOnewayBean'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "The Response One-Way is done differently in SAP CPI"
+    }, {
+        "category": "MANUAL",
+        "ruleName": "Text Codepage Conversion Module",
+        "detectionCondition": "Modules contain 'localejbs/AF_Modules/TextCodepageConversionBean'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "The function of adapter module is achieved differently in SAP CPI"
+    }, {
+        "category": "MANUAL",
+        "ruleName": "Wait Response Module",
+        "detectionCondition": "Modules contain 'localejbs/AF_Modules/WaitResponseBean'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "The function of adapter module is achieved differently in SAP CPI"
+    }, {
+        "category": "MANUAL",
+        "ruleName": "XML Anonymizer Module",
+        "detectionCondition": "Modules contain 'localejbs/AF_Modules/XMLAnonymizerBean'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "The function of adapter module is achieved differently in SAP CPI"
+    }, {
+        "category": "MANUAL",
+        "ruleName": "Acknowledgement Report Module",
+        "detectionCondition": "Modules contain 'localejbs/AcknowledgementReportModule'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "The function of adapter module is achieved differently in SAP CPI"
+    }, {
+        "category": "MANUAL",
+        "ruleName": "Archiver Module",
+        "detectionCondition": "Modules contain 'localejbs/ArchiverModuleBean'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "The function of adapter module is achieved differently in SAP CPI"
+    }, {
+        "category": "AUTO",
+        "ruleName": "EDI Ack Status Log Module",
+        "detectionCondition": "Modules contain 'localejbs/EDIAckStatusLogModule'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "B2B Funcionalities are to be Redesigned in CPI, But Figaf Can Automate them"
+    }, {
+        "category": "AUTO",
+        "ruleName": "EDI Search Parameters Module",
+        "detectionCondition": "Modules contain 'localejbs/EDISearchParametersModule'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "B2B Funcionalities are to be Redesigned in CPI, But Figaf Can Automate them"
+    }, {
+        "category": "AUTO",
+        "ruleName": "EDI Security Module",
+        "detectionCondition": "Modules contain 'localejbs/EDISecurityModule'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "B2B Funcionalities are to be Redesigned in CPI, But Figaf Can Automate them"
+    }, {
+        "category": "AUTO",
+        "ruleName": "EDIFACT Converter Module",
+        "detectionCondition": "Modules contain 'localejbs/EdifactConverterModule'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "B2B Funcionalities are to be Redesigned in CPI, But Figaf Can Automate them"
+    }, {
+        "category": "AUTO",
+        "ruleName": "Generic Converter Module",
+        "detectionCondition": "Modules contain 'localejbs/GenericConverterModule'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "B2B Funcionalities are to be Redesigned in CPI, But Figaf Can Automate them"
+    }, {
+        "category": "AUTO",
+        "ruleName": "Odette Converter Module",
+        "detectionCondition": "Modules contain 'localejbs/OdetteConverterModule'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "B2B Funcionalities are to be Redesigned in CPI, But Figaf Can Automate them"
+    }, {
+        "category": "MANUAL",
+        "ruleName": "PGP Decryption Module",
+        "detectionCondition": "Modules contain 'localejbs/PGPDecryption'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "The function of adapter module is achieved differently in SAP CPI"
+    }, {
+        "category": "MANUAL",
+        "ruleName": "PGP Encryption Module",
+        "detectionCondition": "Modules contain 'localejbs/PGPEncryption'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "The function of adapter module is achieved differently in SAP CPI"
+    }, {
+        "category": "AUTO",
+        "ruleName": "Plain Converter Module",
+        "detectionCondition": "Modules contain 'localejbs/PlainConverterModule'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "The function of adapter module is achieved differently in SAP CPI"
+    }, {
+        "category": "MANUAL",
+        "ruleName": "JMS Adapter – Convert Binary to XMB Message",
+        "detectionCondition": "Modules contain 'localejbs/SAP XI JMS Adapter/ConvertBinaryToXMBMessage'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "The function of adapter module is achieved differently in SAP CPI"
+    }, {
+        "category": "MANUAL",
+        "ruleName": "JMS Adapter – Convert JMS Message to Binary",
+        "detectionCondition": "Modules contain 'localejbs/SAP XI JMS Adapter/ConvertJMSMessageToBinary'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "The function of adapter module is achieved differently in SAP CPI"
+    }, {
+        "category": "MANUAL",
+        "ruleName": "JMS Adapter – Convert Message From Binary",
+        "detectionCondition": "Modules contain 'localejbs/SAP XI JMS Adapter/ConvertMessageFromBinary'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "The function of adapter module is achieved differently in SAP CPI"
+    }, {
+        "category": "MANUAL",
+        "ruleName": "JMS Adapter – Convert Message to Binary",
+        "detectionCondition": "Modules contain 'localejbs/SAP XI JMS Adapter/ConvertMessageToBinary'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "The function of adapter module is achieved differently in SAP CPI"
+    }, {
+        "category": "MANUAL",
+        "ruleName": "JMS Adapter – Send Binary to XI JMS Service",
+        "detectionCondition": "Modules contain 'localejbs/SAP XI JMS Adapter/SendBinarytoXIJMSService'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "The function of adapter module is achieved differently in SAP CPI"
+    }, {
+        "category": "MANUAL",
+        "ruleName": "JMS Adapter – Send Binary to XML Message",
+        "detectionCondition": "Modules contain 'localejbs/SAP XI JMS Adapter/SendBinarytoXMLMessage'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "The function of adapter module is achieved differently in SAP CPI"
+    }, {
+        "category": "MANUAL",
+        "ruleName": "SAP XI Sample – Convert CRLF to/from LF",
+        "detectionCondition": "Modules contain 'localejbs/SAP XI Sample/ConvertCRLFfromToLF'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "The function of adapter module is achieved differently in SAP CPI"
+    }, {
+        "category": "AUTO",
+        "ruleName": "TPM Content Access Module",
+        "detectionCondition": "Modules contain 'localejbs/TPMContentAccessModule'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "B2B Funcionalities are to be Redesigned in CPI, But Figaf Can Automate them"
+    }, {
+        "category": "AUTO",
+        "ruleName": "TRADACOMS Converter Module",
+        "detectionCondition": "Modules contain 'localejbs/TradacomsConverterModule'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "B2B Funcionalities are to be Redesigned in CPI, But Figaf Can Automate them"
+    }, {
+        "category": "AUTO",
+        "ruleName": "Transmission Number Module",
+        "detectionCondition": "Modules contain 'localejbs/TransmissionNumberModule'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "B2B Funcionalities are to be Redesigned in CPI, But Figaf Can Automate them"
+    }, {
+        "category": "AUTO",
+        "ruleName": "VDA Converter Module",
+        "detectionCondition": "Modules contain 'localejbs/VdaConverterModule'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "B2B Funcionalities are to be Redesigned in CPI, But Figaf Can Automate them"
+    }, {
+        "category": "AUTO",
+        "ruleName": "X12 Converter Module",
+        "detectionCondition": "Modules contain 'localejbs/X12ConverterModule'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "B2B Funcionalities are to be Redesigned in CPI, But Figaf Can Automate them"
+    }, {
+        "category": "MANUAL",
+        "ruleName": "SWIFT – FIN Conversion From SWIFT",
+        "detectionCondition": "Modules contain 'localejbs/swift/FINConversionFromSWIFTModule'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "The function of adapter module is achieved differently in SAP CPI"
+    }, {
+        "category": "MANUAL",
+        "ruleName": "SWIFT – FIN Conversion To SWIFT",
+        "detectionCondition": "Modules contain 'localejbs/swift/FINConversionToSWIFTModule'",
+        "effortMultiplier": 0,
+        "scoreImpact": 0,
+        "verdictImpact": "None",
+        "notes": "The function of adapter module is achieved differently in SAP CPI"
+    }
+]
