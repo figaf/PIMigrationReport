@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Figaf Tools</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg:         #f4f7fb;
+    --surface:    #ffffff;
+    --border:     #dce5f0;
+    --brand:      #1c3d6e;
+    --primary:    #2e6fba;
+    --accent:     #e07b1a;
+    --text:       #111827;
+    --muted:      #5f6b7c;
+    --tag-bg:     #e8f0fa;
+    --tag-text:   #1c3d6e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:       #0d1b2e;
+      --surface:  #162035;
+      --border:   #243351;
+      --brand:    #7aabdf;
+      --primary:  #5c9ee0;
+      --accent:   #f4a04a;
+      --text:     #e8edf5;
+      --muted:    #8898b0;
+      --tag-bg:   #1a2d4a;
+      --tag-text: #7aabdf;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:       #0d1b2e;
+    --surface:  #162035;
+    --border:   #243351;
+    --brand:    #7aabdf;
+    --primary:  #5c9ee0;
+    --accent:   #f4a04a;
+    --text:     #e8edf5;
+    --muted:    #8898b0;
+    --tag-bg:   #1a2d4a;
+    --tag-text: #7aabdf;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0 24px;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* ── Header ─────────────────────────────── */
+  header {
+    max-width: 900px;
+    margin: 0 auto;
+    padding-block: 48px 40px;
+    display: flex;
+    align-items: flex-end;
+    gap: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .wordmark {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .wordmark-label {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .wordmark-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--brand);
+    line-height: 1;
+  }
+  .wordmark-name span {
+    color: var(--accent);
+  }
+  header p {
+    margin-left: auto;
+    font-size: 13px;
+    color: var(--muted);
+    text-align: right;
+    line-height: 1.5;
+    max-width: 220px;
+  }
+
+  /* ── App grid ────────────────────────────── */
+  main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding-block: 40px 64px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 24px;
+  }
+
+  /* ── App card ────────────────────────────── */
+  .app-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    text-decoration: none;
+    color: inherit;
+    position: relative;
+    transition: box-shadow 0.18s, border-color 0.18s, transform 0.18s;
+  }
+  .app-card:hover {
+    box-shadow: 0 8px 32px rgba(44, 82, 148, 0.12);
+    border-color: var(--primary);
+    transform: translateY(-2px);
+  }
+  .app-card:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+
+  .card-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+  .card-icon.blue  { background: #e8f0fa; }
+  .card-icon.teal  { background: #e3f6f5; }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .card-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .card-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text);
+    text-wrap: balance;
+  }
+  .card-tagline {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .card-desc {
+    font-size: 14px;
+    line-height: 1.65;
+    color: var(--muted);
+    flex: 1;
+  }
+
+  .card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .tag {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    background: var(--tag-bg);
+    color: var(--tag-text);
+    border-radius: 5px;
+    padding: 3px 9px;
+  }
+
+  .card-launch {
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--primary);
+  }
+  .card-launch svg {
+    flex-shrink: 0;
+    transition: transform 0.15s;
+  }
+  .app-card:hover .card-launch svg {
+    transform: translateX(3px);
+  }
+
+  /* ── Footer ─────────────────────────────── */
+  footer {
+    max-width: 900px;
+    margin: 0 auto;
+    padding-block: 24px 40px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 520px) {
+    body { padding-inline: 16px; }
+    header { flex-direction: column; align-items: flex-start; gap: 10px; }
+    header p { margin-left: 0; text-align: left; max-width: none; }
+    main { grid-template-columns: 1fr; }
+    .app-card { padding: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wordmark">
+    <span class="wordmark-label">SAP Integration</span>
+    <span class="wordmark-name">Figaf <span>Tools</span></span>
+  </div>
+  <p>Assessment &amp; migration planning tools for SAP PI/PO and Integration Suite</p>
+</header>
+
+<main>
+
+  <a class="app-card" href="migration-assessment.html">
+    <div class="card-header">
+      <div class="card-icon blue">🚀</div>
+      <div class="card-meta">
+        <span class="card-tagline">Migration Planner</span>
+        <span class="card-name">Migration Assessment</span>
+      </div>
+    </div>
+    <p class="card-desc">
+      Upload your SAP PI/PO interface list, run it through configurable assessment rules,
+      and get a full project plan — wave schedule, effort estimates, Figaf licence costs,
+      and an Excel export ready for stakeholder review.
+    </p>
+    <div class="card-tags">
+      <span class="tag">SAP PI/PO → CPI</span>
+      <span class="tag">Wave Planner</span>
+      <span class="tag">Excel Export</span>
+      <span class="tag">Figaf Pricing</span>
+    </div>
+    <div class="card-launch">
+      Open app
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M2.5 7h9M8 3.5 11.5 7 8 10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+  </a>
+
+  <a class="app-card" href="sap-assessment.html">
+    <div class="card-header">
+      <div class="card-icon teal">🔍</div>
+      <div class="card-meta">
+        <span class="card-tagline">Landscape Evaluation</span>
+        <span class="card-name">SAP PI/PO Evaluation</span>
+      </div>
+    </div>
+    <p class="card-desc">
+      Evaluate an SAP PI/PO landscape against a structured rule set to score complexity,
+      identify migration readiness, and produce an assessment report for discovery
+      and scoping workshops.
+    </p>
+    <div class="card-tags">
+      <span class="tag">Discovery</span>
+      <span class="tag">Scoring</span>
+      <span class="tag">Readiness</span>
+    </div>
+    <div class="card-launch">
+      Open app
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M2.5 7h9M8 3.5 11.5 7 8 10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+  </a>
+
+</main>
+
+<footer>
+  <span>Figaf ApS · SAP Integration Tools</span>
+  <span>Serve all files from the same folder via a local or hosted web server</span>
+</footer>
+
+</body>
+</html>
