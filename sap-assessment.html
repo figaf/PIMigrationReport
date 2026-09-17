@@ -209,7 +209,7 @@ th.sort-desc::after { content: ' ▼'; font-size: 9px; }
 }
 .cmp-title { font-size: 13px; font-weight: 700; color: #1a237e; margin-bottom: 16px;
   display: flex; align-items: center; gap: 10px; }
-.cmp-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 14px; max-width: 700px; }
+.cmp-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; }
 .cmp-col {
   border-radius: 10px; padding: 14px 16px; text-align: center;
 }
@@ -557,7 +557,10 @@ async function autoFetchRules() {
 
     const manual   = rows.filter(r => r.cat === 'MANUAL');
     const redesign = rows.filter(r => r.cat === 'REDESIGN');
-    figafRules = { base: BASE_EFFORT_DEFAULT, manual, redesign };
+    const modDevRow = json.find(r => r.category === 'ONE-TIME' && r.ruleName === 'Adapter Module Development');
+    const moduleDevMult = modDevRow ? (parseFloat(modDevRow.effortMultiplier) || 2) : 2;
+    _buildKnownModules(json);
+    figafRules = { base: BASE_EFFORT_DEFAULT, manual, redesign, moduleDevMult };
 
     const sapCount = (window._allSapRules || []).length;
     const sapSuffix = sapCount ? ` · ${sapCount} SAP evaluation rules from Rules.txt` : '';
@@ -579,7 +582,10 @@ async function autoFetchRules() {
       }));
       const manual   = rows.filter(r => r.cat === 'MANUAL');
       const redesign = rows.filter(r => r.cat === 'REDESIGN');
-      figafRules = { base: BASE_EFFORT_DEFAULT, manual, redesign };
+      const modDevRow = inline.find(r => r.category === 'ONE-TIME' && r.ruleName === 'Adapter Module Development');
+      const moduleDevMult = modDevRow ? (parseFloat(modDevRow.effortMultiplier) || 2) : 2;
+      _buildKnownModules(inline);
+      figafRules = { base: BASE_EFFORT_DEFAULT, manual, redesign, moduleDevMult };
       const sapCount = (window._allSapRules || []).length;
       const sapSuffix = sapCount ? ` · ${sapCount} SAP evaluation rules from Rules.txt` : '';
       if (rulesBarTxt) rulesBarTxt.textContent =
@@ -767,6 +773,26 @@ async function processFile() {
 //   Operation Mapping, Message Mapping (Request), Message Mapping (Response)
 
 const STANDARD_MODULE_RE = /^(af_modules\/|tpmcontentaccessmodule|genericconvertermodule)/i;
+// Known module paths from assessment-rules.json — populated on load; excludes them from custom dev
+const KNOWN_STANDARD_MODULES = new Set();
+function _buildKnownModules(data) {
+  KNOWN_STANDARD_MODULES.clear();
+  for (const rule of (data || [])) {
+    const cond = rule.detectionCondition || '';
+    if (!cond.toLowerCase().startsWith('modules contain')) continue;
+    const re = /Modules contain '([^']+)'/gi;
+    let mc;
+    while ((mc = re.exec(cond)) !== null) {
+      const path = mc[1].trim().toLowerCase();
+      KNOWN_STANDARD_MODULES.add(path);
+      KNOWN_STANDARD_MODULES.add(path.replace(/^localejbs\//i, ''));
+    }
+  }
+}
+function _isKnownModule(m) {
+  const lo = m.toLowerCase();
+  return STANDARD_MODULE_RE.test(m) || KNOWN_STANDARD_MODULES.has(lo) || KNOWN_STANDARD_MODULES.has(lo.replace(/^localejbs\//i, ''));
+}
 
 // Placeholder values SAP exports for empty fields
 const SAP_EMPTY = new Set(['n/a', 'na', 'none', 'null', '-', '—', '0', 'not applicable', 'not available']);
@@ -810,12 +836,12 @@ function buildTechMap(rows) {
 
     function hasCustomMod(s) {
       return s.split(/[\r\n,;]+/).map(m => m.trim()).filter(Boolean)
-        .some(m => !STANDARD_MODULE_RE.test(m));
+        .some(m => !_isKnownModule(m));
     }
     const hasCustomModule  = hasCustomMod(allSenderMods) || hasCustomMod(allReceiverMods);
     const customModNames   = [...new Set(
       [...allSenderMods.split(/[\r\n,;]+/), ...allReceiverMods.split(/[\r\n,;]+/)]
-        .map(m => m.trim()).filter(m => m && !STANDARD_MODULE_RE.test(m))
+        .map(m => m.trim()).filter(m => m && !_isKnownModule(m))
     )];
 
     // ── BPM — detected from channel/component names containing "BPM" ────────
@@ -1105,7 +1131,7 @@ function computeOneTimeActivities(rows) {
     if (!tech || !tech.hasCustomModule) continue;
     for (const mod of tech.customModNames) {
       if (!modMap[mod]) {
-        const effortD = +(figafRules ? figafRules.base * 2 : BASE_EFFORT_DEFAULT * 2);
+        const effortD = +(figafRules ? figafRules.base * (figafRules.moduleDevMult || 2) : BASE_EFFORT_DEFAULT * 2);
         modMap[mod] = { moduleName: mod, effortD, scenarios: new Set() };
       }
       modMap[mod].scenarios.add(r.scenario);
@@ -1287,6 +1313,8 @@ function runAnalysis() {
 }
 
 // ─── KPI Cards ─────────────────────────────────────────────────────────────────
+const fmtTransport = h => h >= 8 ? `${Math.ceil(h/8)}d` : `${h}h`;
+
 function renderKPIs(total, high, med, low, totalD) {
   document.getElementById('kpiGrid').innerHTML = `
     <div class="kpi-card">
@@ -1308,7 +1336,8 @@ function renderKPIs(total, high, med, low, totalD) {
     <div class="kpi-card purple">
       <div class="kpi-val">${totalD}d</div>
       <div class="kpi-lbl">Total Estimated Effort (days)</div>
-    </div>`;
+    </div>
+    `;
 }
 
 // ─── Effort Banner ─────────────────────────────────────────────────────────────
@@ -1384,6 +1413,21 @@ function renderFigafComparison(rows, sapTotalD) {
         <span style="font-size:10px;color:#555">${figafActualAvg}d avg per ICO</span><br>
         <span class="cmp-saving ${savCls(figafActual, sapTotalD)}">${savPct(figafActual, sapTotalD)} · ${savDays(figafActual, sapTotalD)}</span>
       </div>
+    </div>
+    <div class="cmp-col" style="background:#f9f0ff;border-top:3px solid #7b1fa2">
+      <div class="cmp-col-icon">🚢</div>
+      <div style="display:flex;justify-content:center;gap:14px;align-items:flex-end;margin:6px 0">
+        <div style="text-align:center">
+          <div class="cmp-col-val" style="color:#6a1b9a;font-size:1.4rem">${fmtTransport(n * 3)}</div>
+          <div style="font-size:10px;color:#888;margin-top:2px">No Figaf</div>
+        </div>
+        <div style="font-size:14px;color:#bbb;padding-bottom:6px">→</div>
+        <div style="text-align:center">
+          <div class="cmp-col-val" style="color:#2e7d32;font-size:1.4rem">${fmtTransport(n * 1)}</div>
+          <div style="font-size:10px;color:#888;margin-top:2px">With Figaf</div>
+        </div>
+      </div>
+      <div class="cmp-col-lbl" style="color:#6a1b9a">Transport &amp; Governance<br><span style="font-size:10px;color:#aaa">3h vs 1h per ICO</span></div>
     </div>`;
 
   const techNote = Object.keys(techMap).length

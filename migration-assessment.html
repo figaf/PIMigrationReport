@@ -79,7 +79,7 @@
   .results-section { display: none; }
 
   .stats-grid {
-    display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 16px;
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 16px;
   }
 
   .effort-banner {
@@ -87,10 +87,9 @@
     box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-left: 5px solid #2e7d32;
   }
   .effort-banner-title { font-size: 14px; font-weight: 700; color: #1a237e; margin-bottom: 16px; }
-  .effort-cards { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .effort-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; align-items: stretch; }
   .effort-card {
     background: #f8f9fa; border-radius: 10px; padding: 14px 18px; text-align: center;
-    min-width: 130px; flex: 1;
   }
   .effort-card.sap     { background: #fff3f3; border: 2px solid #ffcdd2; }
   .effort-card.figaf   { background: #f1f8e9; border: 2px solid #c5e1a5; }
@@ -104,7 +103,7 @@
   .pct-val     { color: #1565c0 !important; }
   .effort-lbl  { font-size: 11px; color: #555; margin-top: 4px; line-height: 1.4; }
   .effort-sub  { font-size: 10px; color: #888; }
-  .effort-arrow { font-size: 24px; color: #aaa; flex-shrink: 0; }
+  .effort-arrow { display: none; }
   .effort-arrow.savings { color: #2e7d32; }
   .effort-note { margin-top: 12px; font-size: 11px; color: #888; border-top: 1px solid #f0f0f0; padding-top: 8px; }
   .stat-card {
@@ -544,7 +543,7 @@ var TAGGING_RULES_DATA=[{"tagName":"SFTPwithArchive","displayedName":"SFTP with 
     </div>
     <div class="upload-card">
       <h3>🚀 Step 2 — Figaf Migration Overview</h3>
-      <p>Figaf_migration-overview-*.xlsx — PI Landscape with tags, adapters, and migration details</p>
+      <p>migration-overview-*.xlsx — PI Landscape with tags, adapters, and migration details</p>
       <label for="figafFile">📁 Choose Figaf Excel File</label>
       <input type="file" id="figafFile" accept=".xlsx,.xls">
       <div class="file-status" id="figafStatus"></div>
@@ -653,6 +652,21 @@ var TAGGING_RULES_DATA=[{"tagName":"SFTPwithArchive","displayedName":"SFTP with 
         </div>
         <div style="display:none" id="effortLicenceCost"></div>
         <div style="display:none" id="effortLicenceSub"></div>
+        <div class="effort-card" style="background:#f9f0ff;border:2px solid #ce93d8;border-top:3px solid #7b1fa2">
+          <div class="effort-icon">🚢</div>
+          <div style="display:flex;justify-content:center;gap:12px;align-items:flex-end;margin:4px 0">
+            <div style="text-align:center">
+              <div class="effort-val" id="statTransportNoFigaf" style="color:#6a1b9a;font-size:1.1rem">—</div>
+              <div style="font-size:9px;color:#888;margin-top:2px">No Figaf</div>
+            </div>
+            <div style="font-size:14px;color:#bbb;padding-bottom:4px">→</div>
+            <div style="text-align:center">
+              <div class="effort-val" id="statTransportFigaf" style="color:#2e7d32;font-size:1.1rem">—</div>
+              <div style="font-size:9px;color:#888;margin-top:2px">With Figaf</div>
+            </div>
+          </div>
+          <div class="effort-lbl" style="color:#6a1b9a">Transport &amp; Governance<br><span style="font-size:9px;color:#aaa">3h vs 1h per ICO</span></div>
+        </div>
       </div>
       <div class="effort-note" id="effortNote"></div>
     </div>
@@ -813,7 +827,7 @@ var TAGGING_RULES_DATA=[{"tagName":"SFTPwithArchive","displayedName":"SFTP with 
           </div>
 
           <!-- Top KPI tiles row -->
-          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:18px">
+          <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:18px">
             <div style="background:#fff;border-radius:10px;padding:16px 18px;box-shadow:0 2px 8px rgba(0,0,0,.08);border-top:4px solid #1565c0;text-align:center">
               <div style="font-size:28px;font-weight:800;color:#1565c0;font-variant-numeric:tabular-nums" id="lkpi-total">—</div>
               <div style="font-size:11px;color:#666;margin-top:4px">Total Licence Fee</div>
@@ -843,6 +857,21 @@ var TAGGING_RULES_DATA=[{"tagName":"SFTPwithArchive","displayedName":"SFTP with 
               <div style="font-size:24px;font-weight:800;color:#1b5e20;font-variant-numeric:tabular-nums" id="lkpi-netsaving">—</div>
               <div style="font-size:11px;color:#1b5e20;margin-top:4px;font-weight:600">Cost Saving (after licence)</div>
               <div style="font-size:10px;color:#555;margin-top:2px" id="lkpi-netsaving-sub">gross saving − Figaf licence</div>
+            </div>
+            <div style="background:#f3e5f5;border-radius:10px;padding:16px 18px;box-shadow:0 2px 8px rgba(0,0,0,.08);border-top:4px solid #7b1fa2;text-align:center">
+              <div style="display:flex;justify-content:center;gap:10px;align-items:flex-end">
+                <div>
+                  <div style="font-size:20px;font-weight:800;color:#6a1b9a;font-variant-numeric:tabular-nums" id="lkpi-transport-nofigaf">—</div>
+                  <div style="font-size:9px;color:#888;margin-top:2px">No Figaf</div>
+                </div>
+                <div style="font-size:14px;color:#bbb;padding-bottom:4px">→</div>
+                <div>
+                  <div style="font-size:20px;font-weight:800;color:#2e7d32;font-variant-numeric:tabular-nums" id="lkpi-transport-figaf">—</div>
+                  <div style="font-size:9px;color:#888;margin-top:2px">With Figaf</div>
+                </div>
+              </div>
+              <div style="font-size:11px;color:#6a1b9a;margin-top:6px;font-weight:600">Transport &amp; Governance</div>
+              <div style="font-size:9px;color:#aaa;margin-top:2px">3h vs 1h per ICO</div>
             </div>
           </div>
 
@@ -1313,6 +1342,11 @@ function getModuleStrategy(moduleName) {
 
 // Configurable base effort (days) per non-migrated ICO — set via UI input
 let BASE_EFFORT = 0.5;
+// Adapter module development effort multiplier — loaded from assessment-rules.json ONE-TIME rule
+let MODULE_DEV_MULT = 2;
+// Known standard module paths — populated from assessment-rules.json detectionCondition fields
+// Any module listed here is a known SAP/Figaf-handled module and excluded from custom dev effort
+const KNOWN_STANDARD_MODULES = new Set();
 
 function updateBaseEffortLabel(val) {
   const v = parseFloat(val);
@@ -1345,7 +1379,24 @@ function applyAssessmentRulesData(data) {
   for (const k of Object.keys(RULE_REGISTRY)) delete RULE_REGISTRY[k];
   let count = 0;
   for (const rule of data) {
-    if (rule.category === 'ONE-TIME') continue;
+    if (rule.category === 'ONE-TIME') {
+      if (rule.ruleName === 'Adapter Module Development') {
+        const m = parseFloat(rule.effortMultiplier);
+        if (!isNaN(m) && m > 0) MODULE_DEV_MULT = m;
+      }
+      continue;
+    }
+    // Extract known module paths from detectionCondition so they can be excluded from custom dev
+    if ((rule.detectionCondition || '').toLowerCase().startsWith('modules contain')) {
+      const re = /Modules contain '([^']+)'/gi;
+      let mc;
+      while ((mc = re.exec(rule.detectionCondition)) !== null) {
+        const path = mc[1].trim().toLowerCase();
+        KNOWN_STANDARD_MODULES.add(path);
+        // Also add without leading 'localejbs/' prefix for partial-path matches in the data
+        KNOWN_STANDARD_MODULES.add(path.replace(/^localejbs\//i, ''));
+      }
+    }
     const checkFn = RULE_CHECKS[rule.ruleName] || (() => false);
     RULE_REGISTRY[rule.ruleName] = {
       check:         checkFn,
@@ -1720,7 +1771,7 @@ function computeOneTimeConnections() {
         moduleReg[key] = {
           adapterType:'Adapter Module', label: modName, system: modName, tier:'Module',
           note:'Custom Groovy adapter module — developed once, reused across ICOs',
-          effort: 2 * BASE_EFFORT,
+          effort: MODULE_DEV_MULT * BASE_EFFORT,
           icosSender:[], icosReceiver:[], endpoints: new Set()
         };
       }
@@ -2205,6 +2256,10 @@ function runAnalysis() {
   document.getElementById('statAuto').textContent = autoCount;
   document.getElementById('statManual').textContent = manualCount;
   document.getElementById('statB2B').textContent = b2bICOs.length;
+  const n = allICOs.length;
+  const fmtH = h => h >= 8 ? `${Math.ceil(h/8)}d` : `${h}h`;
+  document.getElementById('statTransportNoFigaf').textContent = n ? fmtH(n * 3) : '—';
+  document.getElementById('statTransportFigaf').textContent  = n ? fmtH(n * 1) : '—';
   document.getElementById('cntTotal').textContent = allICOs.length;
   document.getElementById('cntA2A').textContent = a2aICOs.length;
   document.getElementById('cntB2B').textContent = b2bICOs.length;
@@ -2339,16 +2394,20 @@ function buildICO(piObject, rows, sapMap, overviewMap, seq) {
   // Custom adapter modules = non-standard modules requiring manual migration
   // Standard/auto-handled: AF_Modules/*, TPMContentAccessModule, GenericConverterModule
   const STANDARD_MODULES = /^(af_modules\/|tpmcontentaccessmodule|genericconvertermodule)/i;
+  function isKnownModule(m) {
+    const lo = m.toLowerCase();
+    return STANDARD_MODULES.test(m) || KNOWN_STANDARD_MODULES.has(lo) || KNOWN_STANDARD_MODULES.has(lo.replace(/^localejbs\//i, ''));
+  }
   function hasCustomMod(modsStr) {
     return modsStr.split(/[\r\n]+/).map(m => m.trim()).filter(Boolean)
-      .some(m => !STANDARD_MODULES.test(m));
+      .some(m => !isKnownModule(m));
   }
   const hasCustomModule = hasCustomMod(allModulesSender) || hasCustomMod(allModulesReceiver);
   // Collect unique custom module names for display in the modal
   const customModuleNames = [...new Set(
     [...allModulesSender.split(/[\r\n]+/), ...allModulesReceiver.split(/[\r\n]+/)]
       .map(m => m.trim()).filter(Boolean)
-      .filter(m => !STANDARD_MODULES.test(m))
+      .filter(m => !isKnownModule(m))
   )];
 
   const migrated = rows.some(r => String(r['Migrated'] || '').toLowerCase() === 'yes');
@@ -2534,7 +2593,7 @@ function buildEffortEditor() {
 
   // Module row
   if (hasModules) {
-    const modDefault = 2 * BASE_EFFORT;
+    const modDefault = MODULE_DEV_MULT * BASE_EFFORT;
     const current = effortOverrides['__module__'] !== undefined ? effortOverrides['__module__'] : modDefault;
     const modified = effortOverrides['__module__'] !== undefined;
     html += `<div class="ot-effort-chip${modified?' modified':''}" id="chip___module__">
@@ -3449,6 +3508,12 @@ function renderPlanTab() {
         : 'Run assessment with SAP file to calculate';
     }
 
+    // Transport & Governance tile (plan tab)
+    const totalICOsForTransport = planRows.length;
+    const fmtTH = h => h >= 8 ? `${Math.ceil(h/8)}d` : `${h}h`;
+    if (el('lkpi-transport-nofigaf')) el('lkpi-transport-nofigaf').textContent = totalICOsForTransport ? fmtTH(totalICOsForTransport * 3) : '—';
+    if (el('lkpi-transport-figaf'))   el('lkpi-transport-figaf').textContent   = totalICOsForTransport ? fmtTH(totalICOsForTransport * 1) : '—';
+
     // DevOps transport savings ticker (3h manual → 1h with Figaf = 2h saved per iFlow)
     const devopsHours = figafLicenceN * 2;      // 2h saved × iFlow count
     const devopsDays  = (devopsHours / 8).toFixed(1);
@@ -3792,8 +3857,10 @@ function pvComputeState() {
     if (pvTool(ico) === 'SAP') { sapCount++; sapEffortTotal += ico.effort; }
     else                        { figafCount++; figafEffortTotal += ico.effort; }
   }
-  const totalProjectDays = sapEffortTotal + figafEffortTotal;
-  const consultancyCost  = Math.round(totalProjectDays) * 8 * hRate;
+  const migrationDays    = sapEffortTotal + figafEffortTotal;
+  const transportDays    = Math.ceil((sapCount + figafCount) / 8); // 1h per ICO with Figaf, rounded up
+  const totalProjectDays = migrationDays + transportDays;
+  const consultancyCost  = Math.round(totalProjectDays * 8) * hRate;  // total hours × rate
   const totalProjectCost = consultancyCost + figafLicenceCost;
 
   // Wave grouping
@@ -3841,7 +3908,7 @@ function pvComputeState() {
     figafLicenceCost, figafLicenceN,
     projectStart, projectEnd,
     sapCount, sapEffortTotal, figafCount, figafEffortTotal,
-    totalProjectDays, consultancyCost, totalProjectCost,
+    migrationDays, transportDays, totalProjectDays, consultancyCost, totalProjectCost,
     waves, waveNums, maxWaveNum, totalWeeks, unassignedEffort,
     waveSchedule,
     sortedICOs,
@@ -3854,7 +3921,7 @@ async function downloadProjectView() {
   const { teamSize, capPPW, hRate, figafLicenceCost, figafLicenceN,
           projectStart, projectEnd,
           sapCount, sapEffortTotal, figafCount, figafEffortTotal,
-          totalProjectDays, consultancyCost, totalProjectCost,
+          migrationDays, transportDays, totalProjectDays, consultancyCost, totalProjectCost,
           waves, waveNums, maxWaveNum, totalWeeks,
           waveSchedule, sortedICOs, pvTool } = st;
 
@@ -3894,7 +3961,7 @@ async function downloadProjectView() {
   const kpiValues = [
     `${Math.round(sapEffortTotal)}d (${sapCount} ICOs)`,
     `${Math.round(figafEffortTotal)}d (${figafCount} ICOs)`,
-    `${Math.round(totalProjectDays)}d`,
+    `${Math.round(totalProjectDays)}d (${Math.round(migrationDays)}d migration + ${transportDays}d transport)`,
     `${pvFmtDate(projectStart)} → ${pvFmtDate(projectEnd)}`,
     figafLicenceCost > 0 ? fmtEurXl(figafLicenceCost) : '—',
     fmtEurXl(totalProjectCost),
@@ -4023,7 +4090,7 @@ function renderProjectView() {
           figafLicenceCost, figafLicenceN,
           projectStart, projectEnd,
           sapCount, sapEffortTotal, figafCount, figafEffortTotal,
-          totalProjectDays, consultancyCost, totalProjectCost,
+          migrationDays, transportDays, totalProjectDays, consultancyCost, totalProjectCost,
           waves, waveNums, totalWeeks, unassignedEffort,
           waveSchedule, pvTool } = st;
 
@@ -4036,14 +4103,32 @@ function renderProjectView() {
       <div style="font-size:12px;color:#555;font-weight:600;margin-top:3px">${label}</div>
       <div style="font-size:11px;color:#999;margin-top:2px">${sub}</div>
     </div>`;
+  const pvFmtTH = h => h >= 8 ? `${Math.ceil(h/8)}d` : `${h}h`;
+  const pvN = sapCount + figafCount;
+  const pvTransportKpi = `<div style="background:#f3e5f5;border-radius:10px;padding:14px 16px;box-shadow:0 2px 8px rgba(0,0,0,.08);border-top:4px solid #7b1fa2">
+    <div style="display:flex;gap:10px;align-items:flex-end;justify-content:center">
+      <div style="text-align:center">
+        <div style="font-size:18px;font-weight:800;color:#6a1b9a;font-variant-numeric:tabular-nums">${pvN ? pvFmtTH(pvN * 3) : '—'}</div>
+        <div style="font-size:10px;color:#888;margin-top:1px">No Figaf</div>
+      </div>
+      <div style="font-size:14px;color:#bbb;padding-bottom:4px">→</div>
+      <div style="text-align:center">
+        <div style="font-size:18px;font-weight:800;color:#2e7d32;font-variant-numeric:tabular-nums">${pvN ? pvFmtTH(pvN * 1) : '—'}</div>
+        <div style="font-size:10px;color:#888;margin-top:1px">With Figaf</div>
+      </div>
+    </div>
+    <div style="font-size:12px;color:#6a1b9a;font-weight:600;margin-top:6px;text-align:center">Transport &amp; Governance</div>
+    <div style="font-size:11px;color:#999;margin-top:2px;text-align:center">3h vs 1h per ICO</div>
+  </div>`;
   document.getElementById('pvCostSummary').innerHTML =
     kpi('SAP Migration Tool',    Math.round(sapEffortTotal)   + 'd', `${sapCount} interfaces (SAP Ready + Auto-Migrate)`, '#1565c0') +
     kpi('Figaf Migration Tool',  Math.round(figafEffortTotal) + 'd', `${figafCount} interfaces (Manual Steps + Redesign)`, '#7b1fa2') +
-    kpi('Total Migration Effort',Math.round(totalProjectDays) + 'd', `${sapCount + figafCount} interfaces · ${Math.round(totalProjectDays * 8)}h`, '#1a237e') +
+    kpi('Total Migration Effort',Math.round(totalProjectDays) + 'd', `${sapCount + figafCount} interfaces · ${Math.round(migrationDays * 8)}h · +${(sapCount + figafCount)}h transport & governance`, '#1a237e') +
     kpi('Project Duration', totalWeeks + ' weeks', `${pvFmtDate(projectStart)} → ${pvFmtDate(projectEnd)} · ${teamSize} consultant(s)`, '#00838f') +
-    kpi('Consultancy Cost', fmtEur(consultancyCost), `${Math.round(totalProjectDays)}d × 8h × €${hRate}/h`, '#e65100') +
+    kpi('Consultancy Cost', fmtEur(consultancyCost), `${Math.round(totalProjectDays)}d × 8h × €${hRate}/h · incl. ${transportDays}d transport`, '#e65100') +
     kpi('Figaf Licence', figafLicenceCost > 0 ? fmtEur(figafLicenceCost) : '—', figafLicenceN > 0 ? `${figafLicenceN} objects · one-time` : 'Run assessment first', '#7b1fa2') +
-    kpi('Total Project Cost', fmtEur(totalProjectCost) + (figafLicenceCost > 0 ? '' : '+'), 'Migrate, Adjust & Unit Test + licence', '#2e7d32');
+    kpi('Total Project Cost', fmtEur(totalProjectCost) + (figafLicenceCost > 0 ? '' : '+'), `Migrate, Adjust & Unit Test + licence · incl. transport & governance`, '#2e7d32') +
+    pvTransportKpi;
 
   // Timeline
   const tlEl = document.getElementById('pvTimeline');
