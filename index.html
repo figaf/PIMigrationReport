@@ -7,23 +7,21 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
   :root {
-    --bg:         #f4f7fb;
-    --surface:    #ffffff;
-    --border:     #dce5f0;
-    --brand:      #1d4db0;
-    --primary:    #1d4db0;
-    --accent:     #e07b1a;
-    --text:       #111827;
-    --muted:      #5f6b7c;
-    --tag-bg:     #e8f0fa;
-    --tag-text:   #1c3d6e;
+    --bg:       #f4f7fb;
+    --surface:  #ffffff;
+    --border:   #dce5f0;
+    --primary:  #1d4db0;
+    --accent:   #e07b1a;
+    --text:     #111827;
+    --muted:    #5f6b7c;
+    --tag-bg:   #e8f0fa;
+    --tag-text: #1c3d6e;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
       --bg:       #0d1b2e;
       --surface:  #162035;
       --border:   #243351;
-      --brand:    #7aabdf;
       --primary:  #5c9ee0;
       --accent:   #f4a04a;
       --text:     #e8edf5;
@@ -36,7 +34,6 @@
     --bg:       #0d1b2e;
     --surface:  #162035;
     --border:   #243351;
-    --brand:    #7aabdf;
     --primary:  #5c9ee0;
     --accent:   #f4a04a;
     --text:     #e8edf5;
@@ -57,7 +54,7 @@
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
-  /* ── Header ─────────────────────────────── */
+  /* ── Header ── */
   header {
     max-width: 900px;
     margin: 0 auto;
@@ -68,12 +65,7 @@
     border-bottom: 1px solid var(--border);
   }
   .logo-wrap { flex-shrink: 0; }
-  .logo-wrap svg { display: block; height: 80px; width: auto; }
-  /* Invert giraffe-neutral areas in dark mode so logo reads on dark ground */
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) .logo-wrap .logo-bg { fill: transparent; }
-  }
-  :root[data-theme="dark"] .logo-wrap .logo-bg { fill: transparent; }
+  .logo-wrap img { display: block; height: 72px; width: auto; }
   header p {
     margin-left: auto;
     font-size: 13px;
@@ -83,7 +75,7 @@
     max-width: 220px;
   }
 
-  /* ── App grid ────────────────────────────── */
+  /* ── App grid ── */
   main {
     max-width: 900px;
     margin: 0 auto;
@@ -93,7 +85,7 @@
     gap: 24px;
   }
 
-  /* ── App card ────────────────────────────── */
+  /* ── App card ── */
   .app-card {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -104,201 +96,107 @@
     gap: 16px;
     text-decoration: none;
     color: inherit;
-    position: relative;
     transition: box-shadow 0.18s, border-color 0.18s, transform 0.18s;
   }
   .app-card:hover {
-    box-shadow: 0 8px 32px rgba(44, 82, 148, 0.12);
+    box-shadow: 0 8px 32px rgba(44,82,148,0.12);
     border-color: var(--primary);
     transform: translateY(-2px);
   }
-  .app-card:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 3px;
-  }
+  .app-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
   .card-icon {
-    width: 48px;
-    height: 48px;
+    width: 48px; height: 48px;
     border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 22px;
-    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; flex-shrink: 0;
   }
-  .card-icon.blue  { background: #e8f0fa; }
-  .card-icon.teal  { background: #e3f6f5; }
+  .card-icon.blue { background: #e8f0fa; }
+  .card-icon.teal { background: #e3f6f5; }
 
-  .card-header {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-  }
-  .card-meta {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-  }
+  .card-header { display: flex; align-items: center; gap: 14px; }
+  .card-meta   { display: flex; flex-direction: column; gap: 3px; }
+
   .card-name {
     font-family: 'Syne', sans-serif;
-    font-size: 17px;
-    font-weight: 700;
-    color: var(--text);
-    text-wrap: balance;
+    font-size: 17px; font-weight: 700;
+    color: var(--text); text-wrap: balance;
   }
   .card-tagline {
-    font-size: 12px;
-    font-weight: 500;
-    letter-spacing: 0.08em;
-    color: var(--muted);
-    text-transform: uppercase;
+    font-size: 12px; font-weight: 500;
+    letter-spacing: 0.08em; color: var(--muted); text-transform: uppercase;
   }
+  .card-desc { font-size: 14px; line-height: 1.65; color: var(--muted); flex: 1; }
 
-  .card-desc {
-    font-size: 14px;
-    line-height: 1.65;
-    color: var(--muted);
-    flex: 1;
-  }
-
-  .card-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
+  .card-tags { display: flex; flex-wrap: wrap; gap: 6px; }
   .tag {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    background: var(--tag-bg);
-    color: var(--tag-text);
-    border-radius: 5px;
-    padding: 3px 9px;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
+    background: var(--tag-bg); color: var(--tag-text);
+    border-radius: 5px; padding: 3px 9px;
   }
 
   .card-launch {
-    margin-top: 4px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--primary);
+    margin-top: 4px; display: flex; align-items: center; gap: 6px;
+    font-size: 13px; font-weight: 600; color: var(--primary);
   }
-  .card-launch svg {
-    flex-shrink: 0;
-    transition: transform 0.15s;
-  }
-  .app-card:hover .card-launch svg {
-    transform: translateX(3px);
-  }
+  .card-launch svg { flex-shrink: 0; transition: transform 0.15s; }
+  .app-card:hover .card-launch svg { transform: translateX(3px); }
 
-  /* ── Resources section ──────────────────── */
-  .resources {
-    max-width: 900px;
-    margin: 0 auto;
-    padding-block: 0 56px;
-  }
+  /* ── Resources ── */
+  .resources { max-width: 900px; margin: 0 auto; padding-block: 0 56px; }
   .resources-heading {
     font-family: 'Syne', sans-serif;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 14px;
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 14px;
   }
-  .resource-links {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
+  .resource-links { display: flex; flex-direction: column; gap: 10px; }
+
   .resource-link {
-    display: flex;
-    align-items: flex-start;
-    gap: 14px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 16px 20px;
-    text-decoration: none;
-    color: inherit;
+    display: flex; align-items: flex-start; gap: 14px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px 20px;
+    text-decoration: none; color: inherit;
     transition: border-color 0.15s, box-shadow 0.15s;
   }
   .resource-link:hover {
     border-color: var(--primary);
-    box-shadow: 0 2px 12px rgba(44, 82, 148, 0.08);
+    box-shadow: 0 2px 12px rgba(44,82,148,0.08);
   }
-  .resource-link:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 3px;
-  }
+  .resource-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
   .resource-badge {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    padding: 2px 7px;
-    border-radius: 4px;
-    flex-shrink: 0;
-    margin-top: 1px;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+    text-transform: uppercase; padding: 2px 7px;
+    border-radius: 4px; flex-shrink: 0; margin-top: 1px;
   }
-  .badge-free {
-    background: #d1fae5;
-    color: #065f46;
-  }
-  .badge-docs {
-    background: var(--tag-bg);
-    color: var(--tag-text);
-  }
-  :root[data-theme="dark"] .badge-free,
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) .badge-free {
-      background: #064e3b;
-      color: #6ee7b7;
-    }
-  }
+  .badge-free { background: #d1fae5; color: #065f46; }
+  .badge-docs { background: var(--tag-bg); color: var(--tag-text); }
   :root[data-theme="dark"] .badge-free { background: #064e3b; color: #6ee7b7; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .badge-free { background: #064e3b; color: #6ee7b7; }
+  }
+
   .resource-body { flex: 1; }
   .resource-name {
     font-family: 'Syne', sans-serif;
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--text);
-    margin-bottom: 3px;
+    font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 3px;
   }
-  .resource-desc {
-    font-size: 13px;
-    line-height: 1.55;
-    color: var(--muted);
-  }
+  .resource-desc { font-size: 13px; line-height: 1.55; color: var(--muted); }
   .resource-url {
-    font-size: 11px;
-    color: var(--primary);
-    margin-top: 4px;
-    display: block;
-    word-break: break-all;
+    font-size: 11px; color: var(--primary);
+    margin-top: 4px; display: block; word-break: break-all;
   }
-  .resource-arrow {
-    color: var(--muted);
-    flex-shrink: 0;
-    margin-top: 2px;
-  }
+  .resource-arrow { color: var(--muted); flex-shrink: 0; margin-top: 2px; }
 
-  /* ── Footer ─────────────────────────────── */
+  /* ── Footer ── */
   footer {
-    max-width: 900px;
-    margin: 0 auto;
+    max-width: 900px; margin: 0 auto;
     padding-block: 24px 40px;
     border-top: 1px solid var(--border);
-    font-size: 12px;
-    color: var(--muted);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
+    font-size: 12px; color: var(--muted);
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 12px; flex-wrap: wrap;
   }
 
   @media (max-width: 520px) {
@@ -315,68 +213,7 @@
 
 <header>
   <div class="logo-wrap">
-    <!--
-      Figaf logo — inline SVG reconstruction.
-      Replace this block with <img src="figaf-logo.png" alt="Figaf"> once the
-      PNG is committed to the repo.
-    -->
-    <!-- viewBox: x=-5 y=-14 width=330 height=108 covers ossicone tops (-14) to hoof bottoms (94) -->
-    <svg viewBox="-5 -14 330 108" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Figaf">
-
-      <!-- ── Text: "Fig" ── -->
-      <text x="0" y="66" font-family="Syne, sans-serif" font-weight="800"
-            font-size="70" fill="#1d4db0" letter-spacing="-1">Fig</text>
-
-      <!-- ── Giraffe — sits between "g" (ends ~118px) and "af" (starts ~182px) ── -->
-      <!-- Tail -->
-      <path d="M178,64 Q187,72 182,82" stroke="#f5a623" stroke-width="4" fill="none" stroke-linecap="round"/>
-      <circle cx="182" cy="82" r="4" fill="#c07a1a"/>
-      <!-- Body -->
-      <ellipse cx="157" cy="64" rx="22" ry="13" fill="#f5a623"/>
-      <ellipse cx="148" cy="62" rx="6" ry="5" fill="#c07a1a" opacity=".5"/>
-      <ellipse cx="165" cy="68" rx="5" ry="4" fill="#c07a1a" opacity=".5"/>
-      <!-- Neck (tapers slightly toward head) -->
-      <polygon points="147,64 150,14 164,14 167,64" fill="#f5a623"/>
-      <ellipse cx="154" cy="50" rx="5" ry="6" fill="#c07a1a" opacity=".5"/>
-      <ellipse cx="161" cy="36" rx="4.5" ry="5" fill="#c07a1a" opacity=".5"/>
-      <ellipse cx="154" cy="24" rx="4" ry="4.5" fill="#c07a1a" opacity=".5"/>
-      <!-- Head -->
-      <ellipse cx="154" cy="9" rx="16" ry="12" fill="#f5a623"/>
-      <!-- Snout -->
-      <rect x="162" y="7" width="13" height="9" rx="4.5" fill="#f5a623"/>
-      <rect x="164" y="13" width="9" height="2.5" rx="1.25" fill="#d8890e" opacity=".55"/>
-      <!-- Nostrils -->
-      <circle cx="167" cy="10" r="1.2" fill="#c07a1a" opacity=".7"/>
-      <circle cx="171" cy="10" r="1.2" fill="#c07a1a" opacity=".7"/>
-      <!-- Ear left -->
-      <ellipse cx="140" cy="5" rx="4.5" ry="7" fill="#f5a623" transform="rotate(-25,140,5)"/>
-      <ellipse cx="140" cy="5" rx="2.2" ry="4" fill="#f2c490" transform="rotate(-25,140,5)"/>
-      <!-- Ear right -->
-      <ellipse cx="168" cy="2" rx="4.5" ry="7" fill="#f5a623" transform="rotate(20,168,2)"/>
-      <ellipse cx="168" cy="2" rx="2.2" ry="4" fill="#f2c490" transform="rotate(20,168,2)"/>
-      <!-- Ossicones -->
-      <rect x="147" y="-14" width="4" height="11" rx="2" fill="#d4922a"/>
-      <ellipse cx="149" cy="-14" rx="3.5" ry="3" fill="#d4922a"/>
-      <rect x="157" y="-12" width="4" height="11" rx="2" fill="#d4922a"/>
-      <ellipse cx="159" cy="-12" rx="3.5" ry="3" fill="#d4922a"/>
-      <!-- Eye -->
-      <circle cx="163" cy="8" r="2.8" fill="#2d1a0d"/>
-      <circle cx="163.9" cy="7.1" r="1" fill="white"/>
-      <!-- Legs — front pair slightly forward -->
-      <rect x="139" y="75" width="7" height="17" rx="3.5" fill="#f5a623"/>
-      <rect x="149" y="75" width="7" height="17" rx="3.5" fill="#f5a623"/>
-      <rect x="158" y="75" width="7" height="17" rx="3.5" fill="#f5a623"/>
-      <rect x="168" y="75" width="7" height="17" rx="3.5" fill="#f5a623"/>
-      <!-- Hooves -->
-      <rect x="139" y="89" width="7" height="3.5" rx="1.75" fill="#7a4a1e"/>
-      <rect x="149" y="89" width="7" height="3.5" rx="1.75" fill="#7a4a1e"/>
-      <rect x="158" y="89" width="7" height="3.5" rx="1.75" fill="#7a4a1e"/>
-      <rect x="168" y="89" width="7" height="3.5" rx="1.75" fill="#7a4a1e"/>
-
-      <!-- ── Text: "af" ── -->
-      <text x="182" y="66" font-family="Syne, sans-serif" font-weight="800"
-            font-size="70" fill="#1d4db0" letter-spacing="-1">af</text>
-    </svg>
+    <img src="figaf-logo.png" alt="Figaf">
   </div>
   <p>Assessment &amp; migration planning tools for SAP PI/PO and Integration Suite</p>
 </header>
@@ -392,19 +229,21 @@
       </div>
     </div>
     <p class="card-desc">
-      Upload your SAP PI/PO interface list, run it through configurable assessment rules,
-      and get a full project plan — wave schedule, effort estimates, Figaf licence costs,
-      and an Excel export ready for stakeholder review.
+      Upload your migration assessment from SAP and Figaf. Interfaces marked
+      <strong>Auto-Migrate</strong> are handled by SAP's tool at no extra cost;
+      everything else is migrated using the Figaf migration tool. The app then
+      plans the full project — wave schedule, effort estimates, Figaf licence
+      costs, and an Excel export ready for stakeholder review.
     </p>
     <div class="card-tags">
       <span class="tag">SAP PI/PO → CPI</span>
+      <span class="tag">Auto-Migrate</span>
       <span class="tag">Wave Planner</span>
       <span class="tag">Excel Export</span>
-      <span class="tag">Figaf Pricing</span>
     </div>
     <div class="card-launch">
       Open app
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
         <path d="M2.5 7h9M8 3.5 11.5 7 8 10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </div>
@@ -419,18 +258,19 @@
       </div>
     </div>
     <p class="card-desc">
-      Evaluate an SAP PI/PO landscape against a structured rule set to score complexity,
-      identify migration readiness, and produce an assessment report for discovery
-      and scoping workshops.
+      Upload a migration assessment from SAP only — no Figaf installation required.
+      Figaf assessment rules produce an <strong>indicative</strong> evaluation of
+      complexity and potential savings. Results are approximate; accuracy improves
+      significantly once Figaf is installed in the customer's landscape.
     </p>
     <div class="card-tags">
-      <span class="tag">Discovery</span>
-      <span class="tag">Scoring</span>
-      <span class="tag">Readiness</span>
+      <span class="tag">No Figaf needed</span>
+      <span class="tag">Indicative</span>
+      <span class="tag">Savings Estimate</span>
     </div>
     <div class="card-launch">
       Open app
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
         <path d="M2.5 7h9M8 3.5 11.5 7 8 10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </div>
@@ -463,9 +303,11 @@
       <div class="resource-body">
         <div class="resource-name">Tagging Rules for Migration</div>
         <div class="resource-desc">
-          Learn how to configure tagging rules that assign interfaces to migration waves.
-          Tagging rules drive the wave assignments exported from the Migration Assessment
-          app and uploaded to Figaf.
+          Tagging rules help you understand your SAP PI/PO landscape in detail.
+          We have built a repository of rules covering the most common integration
+          patterns. <strong>We recommend importing these rules and processing them
+          in Figaf before generating the Migration Assessment</strong> — doing so
+          gives you a far more complete and accurate picture of your landscape.
         </div>
         <span class="resource-url">help.figaf.com · Tagging Rules for Migration</span>
       </div>
