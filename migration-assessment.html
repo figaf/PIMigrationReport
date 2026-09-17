@@ -518,19 +518,11 @@ var TAGGING_RULES_DATA=[{"tagName":"SFTPwithArchive","displayedName":"SFTP with 
     <h1>SAP PI/PO Migration Assessment Tool</h1>
     <p>Combines SAP Migration Evaluation with Figaf Tool Assessment — FIGAF Assessment Input rules applied automatically</p>
   </div>
-  <div style="margin-left:auto;display:flex;flex-direction:column;align-items:center;gap:4px">
-    <a href="https://figaf.com" target="_blank" rel="noopener" title="Powered by Figaf"
-       style="display:flex;flex-direction:column;align-items:center;gap:5px;text-decoration:none">
-      <img src="https://figaf.com/wp-content/uploads/2020/06/cropped-200617_Favicon_logo_KW-1-192x192.png"
-           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
-           alt="Figaf"
-           style="height:90px;width:90px;object-fit:contain;background:white;border-radius:14px;padding:8px;box-shadow:0 4px 16px rgba(0,0,0,0.3)">
-      <span style="display:none;flex-direction:column;align-items:flex-end">
-        <span style="font-size:22px;font-weight:800;letter-spacing:1px;color:#fff">FIGAF</span>
-        <span style="font-size:9px;color:rgba(255,255,255,0.7);letter-spacing:2px;text-transform:uppercase">Migration Tool</span>
-      </span>
+  <div style="margin-left:auto">
+    <a href="index.html" title="Back to Figaf Tools"
+       style="display:block;background:#fff;border-radius:10px;padding:6px 14px">
+      <img src="figaf-logo.png" alt="Figaf" style="height:48px;width:auto;display:block">
     </a>
-    <span style="font-size:10px;color:rgba(255,255,255,0.55);letter-spacing:1.5px;text-transform:uppercase;font-weight:500">Powered by Figaf</span>
   </div>
 </div>
 
@@ -1154,17 +1146,27 @@ var TAGGING_RULES_DATA=[{"tagName":"SFTPwithArchive","displayedName":"SFTP with 
 
           <!-- ── Wave interface table ──────────────────────────────────────── -->
           <div style="overflow-x:auto">
-            <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <table style="width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed">
+              <colgroup>
+                <col style="width:4%">   <!-- # -->
+                <col style="width:26%">  <!-- Interface / ICO -->
+                <col style="width:14%">  <!-- Verdict -->
+                <col style="width:12%">  <!-- Migration Tool -->
+                <col style="width:7%">   <!-- Effort -->
+                <col style="width:13%">  <!-- Wave -->
+                <col style="width:12%">  <!-- Status -->
+                <col style="width:12%">  <!-- SAP Category -->
+              </colgroup>
               <thead>
                 <tr style="background:#1a237e;color:#fff;position:sticky;top:0;z-index:2">
-                  <th style="padding:9px 8px;text-align:center;font-weight:600;width:36px">#</th>
-                  <th style="padding:9px 8px;text-align:left;font-weight:600;min-width:200px">Interface / ICO</th>
-                  <th style="padding:9px 8px;text-align:center;font-weight:600;width:140px">Verdict</th>
-                  <th style="padding:9px 8px;text-align:center;font-weight:600;width:110px">Migration Tool</th>
-                  <th style="padding:9px 8px;text-align:right;font-weight:600;width:70px">Effort</th>
-                  <th style="padding:9px 8px;text-align:center;font-weight:600;width:130px">Wave</th>
-                  <th style="padding:9px 8px;text-align:center;font-weight:600;width:120px">Status</th>
-                  <th style="padding:9px 8px;text-align:left;font-weight:600;min-width:120px">SAP Category</th>
+                  <th style="padding:9px 8px;text-align:center;font-weight:600">#</th>
+                  <th style="padding:9px 8px;text-align:left;font-weight:600">Interface / ICO</th>
+                  <th style="padding:9px 8px;text-align:center;font-weight:600">Verdict</th>
+                  <th style="padding:9px 8px;text-align:center;font-weight:600">Migration Tool</th>
+                  <th style="padding:9px 8px;text-align:right;font-weight:600">Effort</th>
+                  <th style="padding:9px 8px;text-align:center;font-weight:600">Wave</th>
+                  <th style="padding:9px 8px;text-align:center;font-weight:600">Status</th>
+                  <th style="padding:9px 8px;text-align:left;font-weight:600">SAP Category</th>
                 </tr>
               </thead>
               <tbody id="pvTableBody"></tbody>
@@ -1188,14 +1190,10 @@ let oneTimeConnections = [];
 let onetimeIgnored = new Set(); // keys of items excluded from migration plan
 
 // ─── Adapter Module Reimplementation Strategies ───────────────────────────────
-// Fetched from SAP Help Portal on load. Falls back to FALLBACK_MODULE_STRATEGIES.
-// Source: https://help.sap.com/docs/migration-guide-po/migration-guide-for-sap-process-orchestration/adapter-modules
-const SAP_HELP_URL = 'https://help.sap.com/docs/migration-guide-po/migration-guide-for-sap-process-orchestration/adapter-modules';
-
-// Fallback strategies — derived from assessment-rules.json (updated 2026-09)
+// Sourced from assessment-rules.json (updated 2026-09)
 // approach: 'Auto'   → ICO migrates automatically (Figaf handles the module)
 //           'Manual' → ICO is migrated by Figaf, but module function needs manual reconfiguration in CPI
-const FALLBACK_MODULE_STRATEGIES = {
+const MODULE_STRATEGIES = {
   // ── Dynamic Configuration (AUTO) ─────────────────────────────────────────
   'DynamicConfigurationBean':                          { strategy:'Figaf converts to iFlow Exchange Properties automatically — ICO migrates without manual steps', approach:'Auto' },
   'AF_Modules/DynamicConfigurationBean':               { strategy:'Module does not exist in CPI — Figaf converts Dynamic Config to System/Exchange Properties automatically', approach:'Auto' },
@@ -1293,54 +1291,7 @@ const FALLBACK_MODULE_STRATEGIES = {
   '_default_':                                         { strategy:'ICO migrated by Figaf — custom module logic must be reviewed and reimplemented as a Groovy script in the iFlow', approach:'Manual' }
 };
 
-let moduleStrategies    = { ...FALLBACK_MODULE_STRATEGIES };
-let moduleStrategiesMeta = { source:'fallback', fetchedAt: null, url: SAP_HELP_URL };
-
-// Try to fetch live strategies from SAP Help Portal on page load
-(async function fetchModuleStrategies() {
-  try {
-    const resp = await fetch(SAP_HELP_URL, { mode:'cors' });
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    const html = await resp.text();
-    const parsed = parseSAPHelpModuleStrategies(html);
-    if (parsed && Object.keys(parsed).length > 1) {
-      moduleStrategies = { ...FALLBACK_MODULE_STRATEGIES, ...parsed };
-      moduleStrategiesMeta = { source:'live', fetchedAt: new Date().toISOString(), url: SAP_HELP_URL };
-      console.log('[ModuleStrategies] Live data loaded:', Object.keys(parsed).length, 'entries');
-    } else {
-      moduleStrategiesMeta = { source:'fallback', fetchedAt: new Date().toISOString(), url: SAP_HELP_URL };
-    }
-  } catch(e) {
-    moduleStrategiesMeta = { source:'fallback', fetchedAt: new Date().toISOString(), url: SAP_HELP_URL };
-    console.warn('[ModuleStrategies] Could not fetch live page, using fallback:', e.message);
-  }
-})();
-
-// Parse module strategy table from SAP Help Portal HTML
-function parseSAPHelpModuleStrategies(html) {
-  const result = {};
-  try {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'text/html');
-    // Look for tables with module names and strategy columns
-    doc.querySelectorAll('table').forEach(tbl => {
-      const rows = [...tbl.querySelectorAll('tr')];
-      if (rows.length < 2) return;
-      const headers = [...rows[0].querySelectorAll('th,td')].map(c => c.textContent.trim().toLowerCase());
-      const modIdx  = headers.findIndex(h => h.includes('module') || h.includes('adapter'));
-      const strIdx  = headers.findIndex(h => h.includes('strateg') || h.includes('approach') || h.includes('migrat'));
-      if (modIdx === -1 || strIdx === -1) return;
-      rows.slice(1).forEach(row => {
-        const cells = [...row.querySelectorAll('td')];
-        if (cells.length <= Math.max(modIdx, strIdx)) return;
-        const mod  = cells[modIdx].textContent.trim();
-        const strat = cells[strIdx].textContent.trim();
-        if (mod && strat) result[mod] = { strategy: strat, approach: detectApproach(strat) };
-      });
-    });
-  } catch(e) { /* ignore parse errors */ }
-  return result;
-}
+const moduleStrategies = MODULE_STRATEGIES;
 
 function detectApproach(strategyText) {
   const t = strategyText.toLowerCase();
@@ -1350,7 +1301,7 @@ function detectApproach(strategyText) {
 }
 
 function getModuleStrategy(moduleName) {
-  if (!moduleName) return FALLBACK_MODULE_STRATEGIES['_default_'];
+  if (!moduleName) return MODULE_STRATEGIES['_default_'];
   // Exact match first
   if (moduleStrategies[moduleName]) return moduleStrategies[moduleName];
   // Prefix match (e.g. AF_Modules/*)
@@ -2822,9 +2773,7 @@ function renderOnetimeRows(allConns) {
       const verdictBorder  = strat.approach === 'Auto' ? '#a5d6a7' : '#ffe082';
       const verdictColor   = strat.approach === 'Auto' ? '#2e7d32' : '#7f4b0c';
       const verdictIcon    = strat.approach === 'Auto' ? '✓' : '⚠';
-      const srcLabel = moduleStrategiesMeta.source === 'live'
-        ? `<span title="Live from SAP Help Portal — fetched ${moduleStrategiesMeta.fetchedAt}" style="color:#1565c0;font-size:8px">● live</span>`
-        : `<span title="Sourced from assessment-rules.json" style="color:#aaa;font-size:8px">● rules</span>`;
+      const srcLabel = `<span title="Sourced from assessment-rules.json" style="color:#aaa;font-size:8px">● rules</span>`;
       nameCell = `<td>
         <span style="font-weight:700;color:#6a1b9a;font-size:11px">${c.system}</span><br>
         <span style="display:inline-block;margin:2px 0;padding:1px 6px;background:${verdictBg};border:1px solid ${verdictBorder};border-radius:3px;font-size:9px;font-weight:700;color:${verdictColor}">${verdictIcon} ICO: ${icoVerdict}</span>
@@ -2885,10 +2834,7 @@ function renderOnetimeRows(allConns) {
   // ── Section 3: Adapter Modules ─────────────────────────────────────────────
   if (modules.length) {
     const modTotalEff = modules.reduce((s,c) => s+c.effort, 0);
-    const srcBadge = moduleStrategiesMeta.source === 'live'
-      ? `<span style="font-size:9px;font-weight:400;opacity:0.8;margin-left:10px">📡 Strategies: live from SAP Help Portal</span>`
-      : `<span style="font-size:9px;font-weight:400;opacity:0.7;margin-left:10px">📋 Strategies: cached fallback
-         — <a href="${SAP_HELP_URL}" target="_blank" rel="noopener" style="color:#e1bee7">view SAP Help</a></span>`;
+    const srcBadge = `<span style="font-size:9px;font-weight:400;opacity:0.7;margin-left:10px">📋 Strategies: assessment-rules.json</span>`;
     html += `<tr class="conn-type-group" style="background:#6a1b9a">
       <td colspan="8" style="color:white;font-size:11px;font-weight:700;padding:6px 10px">
         🔧 ADAPTER MODULES TO DEVELOP — ${modules.length} unique Groovy modules · Total dev effort: ${modTotalEff.toFixed(0)}d ${srcBadge}
