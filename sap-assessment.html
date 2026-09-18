@@ -76,6 +76,17 @@ body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; color: #1a1a2e;
 
 .results-section { display: none; }
 
+/* ── Figaf Reason tooltip ────────────────────────────────────────────────── */
+#sapReasonTip {
+  position: fixed; z-index: 9999; pointer-events: none;
+  background: #fff; border: 1px solid #c5cae9; border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(26,35,126,.18);
+  padding: 14px 16px; max-width: 460px; min-width: 300px;
+  max-height: 80vh; overflow-y: auto;
+  display: none; font-family: 'Segoe UI', sans-serif;
+}
+.sap-reason-cell { cursor: default; }
+
 /* ── KPI Cards ─────────────────────────────────────────────────────────────── */
 .kpi-grid {
   display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 20px;
@@ -1514,21 +1525,71 @@ function buildRow(r, i) {
   const verdictCls = figafTier.includes('redesign') ? '#880e4f' : figafTier.includes('manual') ? '#e65100' : '#2e7d32';
   const verdictIcon = figafTier.includes('redesign') ? '🔴' : figafTier.includes('manual') ? '🟡' : '🟢';
 
-  // Per-rule detail lines (name + notes from JSON)
+  // Full tooltip HTML (shown on hover)
+  const tech = techMap[r.scenario] || {};
+  const senderAdapters   = [...new Set(tech.senderAdapters   || [])];
+  const receiverAdapters = [...new Set(tech.receiverAdapters || [])];
   const _base = (figafRules && figafRules.base) || 0.5;
-  const ruleLines = (r.triggeredRules || []).map(t => {
-    const effortStr = t.mult > 0 ? ` <span style="color:#888">(+${+(_base * t.mult).toFixed(1)}d)</span>` : '';
-    const noteStr   = t.notes ? `<div style="font-size:9px;color:#777;margin-top:1px;padding-left:8px;border-left:2px solid #e0e0e0">${t.notes}</div>` : '';
-    return `<div style="margin-bottom:3px">
-      <span style="font-size:10px;font-weight:600;color:#1a237e">${t.name}</span>${effortStr}${noteStr}
-    </div>`;
-  }).join('');
 
-  const reasonHtml = `
-    <div style="font-size:10px;font-weight:700;color:${verdictCls};margin-bottom:${ruleLines ? '4px' : '2px'}">${verdictIcon} ${r.figafReason||'—'}</div>
-    ${ruleLines}
-    ${tagChips ? `<div style="margin-top:2px">${tagChips}</div>` : ''}
-    ${reuseChip}`;
+  // Build tooltip matching migration-assessment planDetailTooltip style
+  let h = '';
+  h += `<div style="font-size:12px;font-weight:700;color:#1a237e;margin-bottom:8px;border-bottom:1px solid #e0e0e0;padding-bottom:6px">${r.scenario}</div>`;
+
+  // SAP Baseline section
+  h += `<div style="margin-bottom:8px">`;
+  h += `<div style="font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">SAP Baseline Assessment</div>`;
+  if (r.cat && r.cat !== '—') {
+    h += `<div style="margin-bottom:3px"><span style="background:#e3f2fd;color:#1565c0;border-radius:4px;padding:2px 7px;font-weight:600;font-size:11px">${r.cat}</span>`;
+    if (r.tsize) h += ` <span style="background:#e8eaf6;color:#3f51b5;border-radius:4px;padding:2px 7px;font-size:11px;margin-left:4px">T-Shirt: ${r.tsize}</span>`;
+    h += `</div>`;
+  }
+  if (r.avgH) h += `<div style="font-size:11px;color:#444;margin-top:3px">Effort: <strong>${r.avgH}h / ${r.avgD}d</strong> avg &nbsp;·&nbsp; min <strong>${r.minH}h</strong> &nbsp;·&nbsp; max <strong>${r.maxH}h</strong></div>`;
+  h += `</div>`;
+
+  // Adapters section
+  if (senderAdapters.length || receiverAdapters.length) {
+    h += `<div style="margin-bottom:8px">`;
+    h += `<div style="font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Adapters</div>`;
+    if (senderAdapters.length)   h += `<div style="font-size:11px;margin-bottom:2px">Sender: <strong>${senderAdapters.join(', ')}</strong></div>`;
+    if (receiverAdapters.length) h += `<div style="font-size:11px">Receiver: <strong>${receiverAdapters.join(', ')}</strong></div>`;
+    h += `</div>`;
+  }
+
+  // Figaf Assessment section
+  h += `<div style="margin-bottom:8px">`;
+  h += `<div style="font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Figaf Assessment</div>`;
+  h += `<div style="margin-bottom:4px;font-size:11px">Verdict: <strong style="color:${verdictCls}">${verdictIcon} ${r.figafReason||'—'}</strong>${r.figafD != null ? ` &nbsp;·&nbsp; Effort: <strong>${r.figafD}d</strong>` : ''}</div>`;
+
+  const triggeredRules = r.triggeredRules || [];
+  if (triggeredRules.length === 0) {
+    h += `<div style="color:#4caf50;font-size:11px">✅ No issues detected — auto-migrate</div>`;
+  } else {
+    const redesignRules = triggeredRules.filter(t => t.tier === 'REDESIGN');
+    const manualRules   = triggeredRules.filter(t => t.tier === 'MANUAL');
+    const autoRules     = triggeredRules.filter(t => !t.tier || t.tier === 'AUTO');
+    const ruleRow = (t, color) => {
+      const effortStr = t.mult > 0 ? ` <span style="font-size:9px;background:#fff3e0;color:#e65100;border-radius:3px;padding:1px 4px">+${t.mult}×</span>` : '';
+      const noteStr   = t.notes ? `<div style="font-size:10px;color:#666;margin-top:1px;line-height:1.4">${t.notes}</div>` : '';
+      return `<div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:4px;padding:4px 6px;background:rgba(255,255,255,.6);border-radius:5px;border-left:3px solid ${color}">` +
+        `<div style="flex:1;min-width:0"><span style="font-weight:600;font-size:11px;color:#222">${t.name}</span>${effortStr}${noteStr}</div></div>`;
+    };
+    if (redesignRules.length) { h += `<div style="font-size:10px;font-weight:700;color:#c62828;margin:4px 0 2px">🔴 Needs Redesign (${redesignRules.length})</div>`; h += redesignRules.map(t => ruleRow(t,'#c62828')).join(''); }
+    if (manualRules.length)   { h += `<div style="font-size:10px;font-weight:700;color:#e65100;margin:4px 0 2px">⚠️ Manual Steps (${manualRules.length})</div>`;         h += manualRules.map(t => ruleRow(t,'#f57f17')).join(''); }
+    if (autoRules.length)     { h += `<div style="font-size:10px;font-weight:700;color:#1565c0;margin:4px 0 2px">🤖 Auto-handled (${autoRules.length})</div>`;            h += autoRules.map(t => ruleRow(t,'#90caf9')).join(''); }
+  }
+  if (tagChips) h += `<div style="margin-top:4px">${tagChips}</div>`;
+  if (reuseChip) h += `<div style="margin-top:2px">${reuseChip}</div>`;
+  h += `</div>`;
+
+  const fullReasonHtml = h;
+  _sapReasonTipCache[r.seq] = fullReasonHtml;
+
+  // Compact cell summary (verdict + first rule name truncated)
+  const firstRule = r.triggeredRules && r.triggeredRules.length ? r.triggeredRules[0].name : '';
+  const moreCount = r.triggeredRules && r.triggeredRules.length > 1 ? r.triggeredRules.length - 1 : 0;
+  const compactHtml = `
+    <div style="font-size:10px;font-weight:700;color:${verdictCls}">${verdictIcon} ${r.figafReason||'—'}</div>
+    ${firstRule ? `<div style="font-size:9px;color:#666;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px">${firstRule}${moreCount ? ` +${moreCount} more` : ''}</div>` : ''}`;
 
   return `<tr data-search="${r.scenario.toLowerCase()} ${r.cat.toLowerCase()} ${r.tsize.toLowerCase()}">
     <td style="text-align:center;color:#888;font-size:10px">${i+1}</td>
@@ -1542,7 +1603,7 @@ function buildRow(r, i) {
     <td style="text-align:right;color:#888">${r.maxD || '—'}</td>
     <td style="font-size:10px;color:#555" title="${r.cat}">${r.cat}</td>
     <td style="text-align:right;${figafCls};border-left:2px solid #a5d6a7">${figafVal}</td>
-    <td style="padding:4px 6px;word-break:break-word;white-space:normal;overflow:visible;min-width:260px">${reasonHtml}</td>
+    <td style="padding:6px 8px;vertical-align:top;overflow:hidden;cursor:default;min-width:180px" class="sap-reason-cell" data-tipidx="${r.seq}">${compactHtml}</td>
   </tr>`;
 }
 
@@ -1581,7 +1642,7 @@ function renderTable(tabId, rows) {
     <th class="sortable" onclick="sortTable('${tabId}','maxD')">Max Days</th>
     <th class="sortable" onclick="sortTable('${tabId}','cat')">SAP Category</th>
     <th class="sortable" onclick="sortTable('${tabId}','figafD')" style="background:#1b5e20;border-left:2px solid #a5d6a7" title="Indicative estimate only — upload the Figaf Migration Overview in the Full Assessment Tool for a precise per-ICO figure">Figaf Est. ⚠</th>
-    <th style="background:#1b5e20">Figaf Reason</th>
+    <th style="background:#1b5e20">Figaf Reason <span style="font-weight:400;font-size:10px;opacity:.7">(hover for full)</span></th>
   </tr></thead>
   <tbody></tbody>`;
 
@@ -1593,6 +1654,39 @@ function renderTable(tabId, rows) {
 
   tbody.innerHTML = rows.map((r, i) => buildRow(r, i)).join('');
 }
+
+// ─── Figaf Reason tooltip ──────────────────────────────────────────────────────
+const _sapReasonTipCache = {};
+let _sapTip = null, _sapHideTimer = null;
+
+function getSapTip() {
+  if (!_sapTip) _sapTip = document.getElementById('sapReasonTip');
+  return _sapTip;
+}
+function showSapTip(cell, e) {
+  const tip = getSapTip(); if (!tip) return;
+  clearTimeout(_sapHideTimer);
+  const html = _sapReasonTipCache[cell.getAttribute('data-tipidx')];
+  if (!html) return;
+  tip.innerHTML = html;
+  tip.style.display = 'block';
+  moveSapTip(e);
+}
+function moveSapTip(e) {
+  const tip = getSapTip(); if (!tip || tip.style.display === 'none') return;
+  const pad = 18, tw = tip.offsetWidth, th = tip.offsetHeight;
+  let x = e.clientX + pad, y = e.clientY + pad;
+  if (x + tw > window.innerWidth  - 10) x = e.clientX - tw - pad;
+  if (y + th > window.innerHeight - 10) y = e.clientY - th - pad;
+  tip.style.left = Math.max(8, x) + 'px';
+  tip.style.top  = Math.max(8, y) + 'px';
+}
+function hideSapTip() {
+  _sapHideTimer = setTimeout(() => { const t = getSapTip(); if (t) t.style.display = 'none'; }, 80);
+}
+document.addEventListener('mouseover',  e => { const c = e.target.closest('.sap-reason-cell'); if (c) showSapTip(c, e); });
+document.addEventListener('mousemove',  e => { if (e.target.closest('.sap-reason-cell')) moveSapTip(e); });
+document.addEventListener('mouseout',   e => { if (e.target.closest('.sap-reason-cell')) hideSapTip(); });
 
 // ─── Sort ──────────────────────────────────────────────────────────────────────
 const tabRows = { all: () => allRows, high: () => allRows.filter(r=>['L','XL','XXL'].includes(r.tsize)),
@@ -1990,5 +2084,6 @@ function yyyymmdd() {
   return d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
 }
 </script>
+<div id="sapReasonTip"></div>
 </body>
 </html>

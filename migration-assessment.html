@@ -619,6 +619,30 @@ var TAGGING_RULES_DATA=[{"tagName":"SFTPwithArchive","displayedName":"SFTP with 
       </div>
     </div>
 
+    <!-- Coverage Analysis Panel -->
+    <div id="coveragePanel" style="display:none;background:#fff;border:1px solid #dce5f0;border-radius:12px;margin-bottom:16px;overflow:hidden">
+      <div id="coverageHeader" onclick="document.getElementById('coverageBody').style.display=document.getElementById('coverageBody').style.display==='none'?'block':'none';this.querySelector('.cov-chevron').textContent=document.getElementById('coverageBody').style.display==='none'?'▶':'▼'"
+           style="display:flex;align-items:center;gap:12px;padding:14px 18px;cursor:pointer;user-select:none;background:#f4f7fb">
+        <span style="font-size:16px">🔗</span>
+        <span style="font-family:inherit;font-size:13px;font-weight:700;color:#1a237e;flex:1">SAP ↔ Figaf Coverage Analysis</span>
+        <span id="coverageSummaryChip" style="font-size:11px;padding:2px 10px;border-radius:10px;background:#e8f0fa;color:#1565c0;font-weight:600"></span>
+        <span class="cov-chevron" style="font-size:11px;color:#888">▶</span>
+      </div>
+      <div id="coverageBody" style="display:none;padding:16px 18px">
+        <div id="coverageStats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div>
+            <div style="font-size:11px;font-weight:700;color:#c62828;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">⚠ SAP only — not in Figaf (<span id="covSapOnlyCount">0</span>)</div>
+            <div id="covSapOnlyList" style="max-height:220px;overflow-y:auto;font-size:11px;line-height:1.7;color:#444;border:1px solid #ffcdd2;border-radius:6px;padding:8px;background:#fff3f3"></div>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:700;color:#e65100;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">⚠ Figaf only — not in SAP (<span id="covFigafOnlyCount">0</span>)</div>
+            <div id="covFigafOnlyList" style="max-height:220px;overflow-y:auto;font-size:11px;line-height:1.7;color:#444;border:1px solid #ffe0b2;border-radius:6px;padding:8px;background:#fff8f0"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Effort Comparison Banner -->
     <div class="effort-banner" id="effortBanner" style="display:none">
       <div class="effort-banner-title">⚡ Effort Comparison: SAP Manual Migration vs. FIGAF Automated</div>
@@ -2147,6 +2171,30 @@ function runAnalysis() {
     allICOs.push(ico);
   }
 
+  // Add stub ICOs for SAP scenarios not present in Figaf
+  const figafKeys = new Set(allICOs.map(i => i.piObject));
+  for (const [key, sap] of Object.entries(sapMap)) {
+    if (figafKeys.has(key)) continue;
+    globalSeq++;
+    allICOs.push({
+      seq: globalSeq, piObject: key,
+      sapSystem: '', icoNumber: '',
+      senderParty: '', senderSystem: '',
+      senderTypes: [], receiverTypes: [], receiverSystems: [], receiverParties: [],
+      senderTagChips: [], receiverTagChips: [], allSenderTags: [], allReceiverTags: [],
+      scenarioType: 'A2A', isB2B: false, migrated: false,
+      verdict: 'SAP Only', score: 0, effort: 0, effortNoReuse: 0,
+      detectedActivities: [], activitiesAll: [], activitiesReused: [],
+      reuseRefs: [], newObjects: [], isReuse: false, reuseSummary: '',
+      _omContent: '', _fl: '', _sm: '', _rm: '',
+      sapAvgDays: sap.avgEffort ? parseFloat((sap.avgEffort / 8).toFixed(1)) : null,
+      sapMinDays: sap.minEffort ? parseFloat((sap.minEffort / 8).toFixed(1)) : null,
+      sapMaxDays: sap.maxEffort ? parseFloat((sap.maxEffort / 8).toFixed(1)) : null,
+      sapCategory: sap.category || '', sapTshirt: sap.tshirt || '',
+      hasBPM: false, hasDynamicConfig: false, customModuleNames: []
+    });
+  }
+
   // Sort: migrated last, then by score desc
   allICOs.sort((a, b) => {
     if (a.migrated !== b.migrated) return a.migrated ? 1 : -1;
@@ -2256,7 +2304,7 @@ function runAnalysis() {
   document.getElementById('statAuto').textContent = autoCount;
   document.getElementById('statManual').textContent = manualCount;
   document.getElementById('statB2B').textContent = b2bICOs.length;
-  const n = allICOs.length;
+  const n = allICOs.filter(i => !i.migrated && i.verdict !== 'SAP Only').length;
   const fmtH = h => h >= 8 ? `${Math.ceil(h/8)}d` : `${h}h`;
   document.getElementById('statTransportNoFigaf').textContent = n ? fmtH(n * 3) : '—';
   document.getElementById('statTransportFigaf').textContent  = n ? fmtH(n * 1) : '—';
@@ -2360,9 +2408,69 @@ function runAnalysis() {
   // Project View tab
   renderProjectView();
 
+  renderCoverageAnalysis();
+
   document.getElementById('resultsSection').style.display = 'block';
   document.getElementById('fullReportBtn').style.display = 'inline-flex';
   document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderCoverageAnalysis() {
+  const panel = document.getElementById('coveragePanel');
+  if (!sapData || !figafData) { panel.style.display = 'none'; return; }
+
+  // SAP keys: Integration Scenario
+  const sapKeys   = new Set(sapData.map(r => String(r['Integration Scenario'] || '').trim()).filter(Boolean));
+  // Figaf keys: PI object (already grouped into allICOs)
+  const figafKeys = new Set(allICOs.map(i => i.piObject));
+
+  const matched    = [...figafKeys].filter(k => sapKeys.has(k));
+  const sapOnly    = [...sapKeys].filter(k => !figafKeys.has(k)).sort();
+  const figafOnly  = [...figafKeys].filter(k => !sapKeys.has(k)).sort();
+
+  const total = sapKeys.size + figafOnly.length; // union size
+  const pct   = sapKeys.size ? Math.round(matched.length / sapKeys.size * 100) : 0;
+
+  document.getElementById('coverageSummaryChip').textContent =
+    `${matched.length} matched · ${pct}% SAP coverage`;
+
+  document.getElementById('coverageStats').innerHTML = `
+    <div style="background:#e8f5e9;border-radius:8px;padding:12px;text-align:center">
+      <div style="font-size:24px;font-weight:800;color:#2e7d32">${sapKeys.size}</div>
+      <div style="font-size:11px;color:#388e3c;font-weight:600;margin-top:2px">SAP Scenarios</div>
+    </div>
+    <div style="background:#e8f0fa;border-radius:8px;padding:12px;text-align:center">
+      <div style="font-size:24px;font-weight:800;color:#1565c0">${figafKeys.size}</div>
+      <div style="font-size:11px;color:#1565c0;font-weight:600;margin-top:2px">Figaf PI Objects</div>
+    </div>
+    <div style="background:#e8f5e9;border-radius:8px;padding:12px;text-align:center;border:2px solid #a5d6a7">
+      <div style="font-size:24px;font-weight:800;color:#1b5e20">${matched.length}</div>
+      <div style="font-size:11px;color:#2e7d32;font-weight:600;margin-top:2px">Matched (both)</div>
+    </div>
+    <div style="background:#fff3f3;border-radius:8px;padding:12px;text-align:center">
+      <div style="font-size:24px;font-weight:800;color:#c62828">${sapOnly.length}</div>
+      <div style="font-size:11px;color:#c62828;font-weight:600;margin-top:2px">SAP only</div>
+    </div>
+    <div style="background:#fff8f0;border-radius:8px;padding:12px;text-align:center">
+      <div style="font-size:24px;font-weight:800;color:#e65100">${figafOnly.length}</div>
+      <div style="font-size:11px;color:#e65100;font-weight:600;margin-top:2px">Figaf only</div>
+    </div>
+    <div style="background:#f4f7fb;border-radius:8px;padding:12px;text-align:center">
+      <div style="font-size:24px;font-weight:800;color:#1a237e">${pct}%</div>
+      <div style="font-size:11px;color:#3949ab;font-weight:600;margin-top:2px">SAP coverage in Figaf</div>
+    </div>`;
+
+  document.getElementById('covSapOnlyCount').textContent  = sapOnly.length;
+  document.getElementById('covFigafOnlyCount').textContent = figafOnly.length;
+
+  const listHtml = items => items.length
+    ? items.map(k => `<div style="padding:2px 0;border-bottom:1px solid rgba(0,0,0,.05)">${k}</div>`).join('')
+    : '<div style="color:#aaa;font-style:italic">None</div>';
+
+  document.getElementById('covSapOnlyList').innerHTML   = listHtml(sapOnly);
+  document.getElementById('covFigafOnlyList').innerHTML = listHtml(figafOnly);
+
+  panel.style.display = 'block';
 }
 
 function buildICO(piObject, rows, sapMap, overviewMap, seq) {
@@ -2495,7 +2603,8 @@ function verdictBadge(verdict) {
     'Migrate + Manual Steps': 'badge-manual',
     'Complex': 'badge-complex',
     'Needs Redesign': 'badge-redesign',
-    'Already Migrated': 'badge-migrated'
+    'Already Migrated': 'badge-migrated',
+    'SAP Only': 'badge-migrated'
   }[verdict] || 'badge-auto';
   return `<span class="badge ${cls}">${verdict}</span>`;
 }
@@ -2980,7 +3089,7 @@ function renderTable(tabId, icos) {
     const scoreHtml = `<span style="font-weight:700;color:${color};font-size:12px">${ico.score}</span>`;
 
     // Effort
-    const effortHtml = ico.migrated
+    const effortHtml = (ico.migrated || ico.verdict === 'SAP Only')
       ? `<span style="color:#aaa;font-size:11px">—</span>`
       : `<span class="effort-cell ${effortClass(ico.score)}" style="font-size:11px">${ico.effort.toFixed(0)}d</span>`;
 
@@ -3282,7 +3391,7 @@ function planRowHtml(entry, idx) {
 
   // Effort
   let effortHtml;
-  if (ico.migrated) {
+  if (ico.migrated || ico.verdict === 'SAP Only') {
     effortHtml = '<span style="color:#888">—</span>';
   } else if (sapReady && ico.sapAvgDays) {
     effortHtml = '<span style="font-weight:700;color:#1565c0">' + ico.sapAvgDays + 'd</span>' +
@@ -3293,7 +3402,7 @@ function planRowHtml(entry, idx) {
 
   // Licence cost cell — only Figaf-migrated, non-already-migrated ICOs carry a cost
   let licenceCellHtml;
-  if (ico.migrated) {
+  if (ico.migrated || ico.verdict === 'SAP Only') {
     licenceCellHtml = '<span style="color:#aaa">—</span>';
   } else if (sapReady) {
     licenceCellHtml = '<span style="color:#ccc;font-size:10px" title="SAP migration — no Figaf licence cost">—</span>';
@@ -3308,7 +3417,9 @@ function planRowHtml(entry, idx) {
   // Compact detail summary for cell (1–2 lines max)
   const acts = ico.activitiesAll || ico.detectedActivities || [];
   let summaryHtml;
-  if (acts.length === 0) {
+  if (ico.verdict === 'SAP Only') {
+    summaryHtml = '<span style="color:#888;font-size:11px">No Figaf data — SAP assessment only</span>';
+  } else if (acts.length === 0) {
     summaryHtml = '<span style="color:#4caf50;font-size:11px">✅ Auto-migrate — no issues</span>';
   } else {
     const redesign = acts.filter(a => REDESIGN_NAMES.has(a));
@@ -3434,12 +3545,12 @@ function renderPlanTab() {
   document.getElementById('cntPlan').textContent = planRows.length;
 
   const sapReadyCount  = planRows.filter(r => r.sapReady).length;
-  const figafCount     = planRows.length - sapReadyCount;
-  const totalEffort    = planRows.reduce((s, r) => s + (r.ico.migrated ? 0 : r.ico.effort), 0);
+  const figafCount     = planRows.filter(r => !r.sapReady && !r.ico.migrated && r.ico.verdict !== 'SAP Only').length;
+  const totalEffort    = planRows.reduce((s, r) => s + (r.ico.migrated || r.ico.verdict === 'SAP Only' ? 0 : r.ico.effort), 0);
   const sapEffort      = planRows.filter(r => r.sapReady && r.ico.sapAvgDays).reduce((s, r) => s + (r.ico.sapAvgDays || 0), 0);
 
-  // Licence cost: only Figaf-migrated ICOs (not migrated already, not SAP)
-  const figafMigrateRows = planRows.filter(r => !r.sapReady && !r.ico.migrated);
+  // Licence cost: only Figaf-migrated ICOs (not migrated already, not SAP, not SAP-only stubs)
+  const figafMigrateRows = planRows.filter(r => !r.sapReady && !r.ico.migrated && r.ico.verdict !== 'SAP Only');
   const figafLicenceN    = figafMigrateRows.length;
   const figafLicenceCost = calcFigafLicenceCost(figafLicenceN);
   const tierInfo         = figafLicenceTier(figafLicenceN);
@@ -3508,18 +3619,20 @@ function renderPlanTab() {
         : 'Run assessment with SAP file to calculate';
     }
 
-    // Transport & Governance tile (plan tab)
-    const totalICOsForTransport = planRows.length;
+    // Transport & Governance tile (plan tab) — all active ICOs (SAP + Figaf), excluding already-migrated and SAP-only stubs
+    const totalICOsForTransport = planRows.filter(r => !r.ico.migrated && r.ico.verdict !== 'SAP Only').length;
     const fmtTH = h => h >= 8 ? `${Math.ceil(h/8)}d` : `${h}h`;
     if (el('lkpi-transport-nofigaf')) el('lkpi-transport-nofigaf').textContent = totalICOsForTransport ? fmtTH(totalICOsForTransport * 3) : '—';
     if (el('lkpi-transport-figaf'))   el('lkpi-transport-figaf').textContent   = totalICOsForTransport ? fmtTH(totalICOsForTransport * 1) : '—';
 
     // DevOps transport savings ticker (3h manual → 1h with Figaf = 2h saved per iFlow)
-    const devopsHours = figafLicenceN * 2;      // 2h saved × iFlow count
+    // All active ICOs (SAP Auto-Migrate + Figaf), not just Figaf-licence ones
+    const totalTransportN = planRows.filter(r => !r.ico.migrated && r.ico.verdict !== 'SAP Only').length;
+    const devopsHours = totalTransportN * 2;    // 2h saved × iFlow count
     const devopsDays  = (devopsHours / 8).toFixed(1);
     if (el('devops-hours')) el('devops-hours').textContent = devopsHours.toLocaleString();
     if (el('devops-days'))  el('devops-days').textContent  = devopsDays;
-    if (el('devops-basis')) el('devops-basis').textContent = `${figafLicenceN} iFlows × ~2h saved (3h manual − 1h with Figaf)`;
+    if (el('devops-basis')) el('devops-basis').textContent = `${totalTransportN} iFlows × ~2h saved (3h manual − 1h with Figaf)`;
     // DevOps cost summary — migration licence (dynamic) + DevOps Suite (dynamic by iFlow count)
     if (el('devops-migration-cost')) el('devops-migration-cost').textContent = figafLicenceN > 0 ? fmtEur(figafLicenceCost) : '—';
     if (el('devops-migration-n'))    el('devops-migration-n').textContent    = figafLicenceN > 0 ? figafLicenceN : '—';
@@ -3853,7 +3966,7 @@ function pvComputeState() {
   // Per-ICO tool + effort
   let sapCount = 0, sapEffortTotal = 0, figafCount = 0, figafEffortTotal = 0;
   for (const ico of allICOs) {
-    if (ico.migrated) continue;
+    if (ico.migrated || ico.verdict === 'SAP Only') continue;
     if (pvTool(ico) === 'SAP') { sapCount++; sapEffortTotal += ico.effort; }
     else                        { figafCount++; figafEffortTotal += ico.effort; }
   }
